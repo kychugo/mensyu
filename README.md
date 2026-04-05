@@ -2,8 +2,6 @@
 
 > 專為香港 DSE 學生設計的文言文互動學習平台
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 ---
 
 ## ✨ 功能特色
@@ -88,8 +86,3 @@ mensyu/
 - **第一位注冊用戶**自動成為管理員
 - 管理員可在管理面板 (`/admin`) 增刪管理員帳戶、封禁用戶、查看錯誤日誌等
 
----
-
-## 📜 授權
-
-MIT License
