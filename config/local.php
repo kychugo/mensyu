@@ -9,8 +9,8 @@ define('DB_HOST', 'sql111.infinityfree.com');
 define('DB_PORT', '3306');
 define('DB_NAME', 'if0_41581260_mensyu');
 define('DB_USER', 'if0_41581260');
-define('DB_PASS', 'YOUR_DB_PASSWORD_HERE');
+define('DB_PASS', 'hfy23whc');
 
 // AI API (pollinations.ai)
-define('AI_SECRET_KEY',      'sk_YOUR_SECRET_KEY_HERE');
-define('AI_PUBLISHABLE_KEY', 'pk_YOUR_PUBLISHABLE_KEY_HERE');
+define('AI_SECRET_KEY',      'sk_I9LbeRaewORSMEdm2ontKkJEHgimbE1v');
+define('AI_PUBLISHABLE_KEY', 'pk_ZQ4XnvfBU2tu6riY');
