@@ -29,6 +29,17 @@ function db_connect(): PDO {
         PDO::ATTR_EMULATE_PREPARES   => false,
     ];
     $_db_instance = new PDO($dsn, DB_USER, DB_PASS, $options);
+
+    // ── Auto-install on first run ────────────────────────────────────
+    // Uses a flag file so the install check only runs once per deployment.
+    // Falls back to re-checking against the DB if the flag file is unwritable.
+    $flag = __DIR__ . '/../data/.installed';
+    if (!file_exists($flag)) {
+        require_once __DIR__ . '/install.php';
+        db_install();
+        @file_put_contents($flag, date('c'));   // silent fail — idempotent anyway
+    }
+
     return $_db_instance;
 }
 

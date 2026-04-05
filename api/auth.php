@@ -84,12 +84,21 @@ function auth_register(string $username, string $password, string $confirm): arr
         }
 
         $hash = password_hash($password, PASSWORD_BCRYPT);
-        db_query('INSERT INTO users (username, password_hash) VALUES (?, ?)', [$username, $hash]);
 
-        $user = db_query('SELECT id FROM users WHERE username = ?', [$username])->fetch();
+        // First user ever becomes admin
+        $user_count = (int)db_query('SELECT COUNT(*) FROM users')->fetchColumn();
+        $is_admin   = ($user_count === 0) ? 1 : 0;
+
+        db_query(
+            'INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)',
+            [$username, $hash, $is_admin]
+        );
+
+        $user = db_query('SELECT id, is_admin FROM users WHERE username = ?', [$username])->fetch();
         session_regenerate_id(true);
         $_SESSION['user_id']  = $user['id'];
         $_SESSION['username'] = $username;
+        $_SESSION['is_admin'] = (bool)$user['is_admin'];
 
         return ['success' => true, 'message' => '注冊成功！'];
     } catch (PDOException $e) {
@@ -103,14 +112,21 @@ function auth_login(string $username, string $password): array {
     }
 
     try {
-        $user = db_query('SELECT id, username, password_hash FROM users WHERE username = ?', [$username])->fetch();
+        $user = db_query(
+            'SELECT id, username, password_hash, is_admin, is_banned FROM users WHERE username = ?',
+            [$username]
+        )->fetch();
         if (!$user || !password_verify($password, $user['password_hash'])) {
             return ['success' => false, 'message' => '用戶名稱或密碼錯誤'];
+        }
+        if ($user['is_banned']) {
+            return ['success' => false, 'message' => '此帳戶已被封禁，請聯絡管理員'];
         }
 
         session_regenerate_id(true);
         $_SESSION['user_id']  = $user['id'];
         $_SESSION['username'] = $user['username'];
+        $_SESSION['is_admin'] = (bool)$user['is_admin'];
 
         return ['success' => true, 'message' => '登入成功！'];
     } catch (PDOException $e) {

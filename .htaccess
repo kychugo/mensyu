@@ -24,6 +24,7 @@ ServerSignature Off
   RewriteRule ^api/progress\.php$ - [L]
   RewriteRule ^api/achievements\.php$ - [L]
   RewriteRule ^api/cron_post\.php$ - [L]
+  RewriteRule ^api/admin\.php$ - [L]
   # Block everything else under api/
   RewriteRule ^api/ - [F,L]
 

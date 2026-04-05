@@ -19,7 +19,19 @@ function session_get_user(): ?array {
     return [
         'id'       => $_SESSION['user_id'],
         'username' => $_SESSION['username'] ?? '',
+        'is_admin' => !empty($_SESSION['is_admin']),
     ];
+}
+
+function session_is_admin(): bool {
+    return !empty($_SESSION['is_admin']);
+}
+
+function session_require_admin(): void {
+    if (!session_is_admin()) {
+        header('Location: /');
+        exit;
+    }
 }
 
 function csrf_token_generate(): string {

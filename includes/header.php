@@ -19,6 +19,11 @@ $nav_items = [
     'translate' => ['label' => '翻譯',     'icon' => '🔤', 'url' => '/translate'],
     'profile'   => ['label' => '個人',     'icon' => '👤', 'url' => '/profile'],
 ];
+
+// Admin nav entry (only shown to admin users)
+if (!empty($_user['is_admin'])) {
+    $nav_items['admin'] = ['label' => '管理', 'icon' => '⚙️', 'url' => '/admin'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="zh-HK">
