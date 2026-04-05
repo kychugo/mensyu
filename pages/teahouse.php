@@ -137,7 +137,7 @@ async function submitPost() {
   fd.append('action', 'add');
   fd.append('content', content);
   fd.append('csrf_token', CSRF);
-  const r = await fetch('/api/posts', {method:'POST', body: fd});
+  const r = await fetch('/api/posts.php', {method:'POST', body: fd});
   const {success, message} = await r.json();
   if (success) {
     document.getElementById('post-content').value = '';
@@ -185,7 +185,7 @@ async function submitComment() {
   fd.append('post_id', _activePostId);
   fd.append('content', content);
   fd.append('csrf_token', CSRF);
-  const r = await fetch('/api/posts', {method:'POST', body: fd});
+  const r = await fetch('/api/posts.php', {method:'POST', body: fd});
   const {success, message} = await r.json();
   if (success) {
     document.getElementById('comment-input').value = '';

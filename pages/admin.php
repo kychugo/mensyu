@@ -465,7 +465,7 @@ async function apiPost(params = {}) {
   const fd = new FormData();
   fd.append('csrf_token', CSRF);
   for (const [k, v] of Object.entries(params)) fd.append(k, v);
-  const r = await fetch('/api/admin', {method: 'POST', body: fd});
+  const r = await fetch('/api/admin.php', {method: 'POST', body: fd});
   return r.json();
 }
 

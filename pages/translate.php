@@ -77,7 +77,7 @@ $essay_id = (int)($_GET['essay_id'] ?? 0);
 
 <script>
 // Load essays into select
-fetch('/api/essays?action=list')
+fetch('/api/essays.php?action=list')
   .then(r => r.json())
   .then(({data}) => {
     const sel = document.getElementById('essay-select');
@@ -111,7 +111,7 @@ document.getElementById('btn-translate').addEventListener('click', async () => {
   showSpinner(true);
   hideResults();
   try {
-    const r = await fetch('/api/ai_text', {
+    const r = await fetch('/api/ai_text.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({action: 'translate', text})
@@ -132,7 +132,7 @@ document.getElementById('btn-quiz').addEventListener('click', async () => {
   showSpinner(true);
   hideResults();
   try {
-    const r = await fetch('/api/ai_text', {
+    const r = await fetch('/api/ai_text.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({action: 'quiz', text})
