@@ -1,0 +1,16 @@
+# Gitignore — keep credentials out of version control
+
+# Local config with real credentials (copy from local.php.example)
+config/local.php
+
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# PHP error logs
+*.log
+php_errors.log

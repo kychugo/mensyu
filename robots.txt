@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /config/
+Disallow: /includes/
+Disallow: /data/
+
+Sitemap: https://mensyu.infinityfreeapp.com/sitemap.xml
