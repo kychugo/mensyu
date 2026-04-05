@@ -6,9 +6,9 @@
  */
 
 // CLI or verified cron key only
-$cron_key = getenv('CRON_KEY') ?: 'mensyu_cron_2026';
+$cron_key = getenv('CRON_KEY');
 if (PHP_SAPI !== 'cli') {
-    if (($_GET['cron_key'] ?? '') !== $cron_key) {
+    if (!$cron_key || ($_GET['cron_key'] ?? '') !== $cron_key) {
         http_response_code(403);
         exit('Forbidden');
     }

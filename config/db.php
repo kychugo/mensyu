@@ -3,11 +3,17 @@
  * config/db.php — MySQL PDO connection
  */
 
-define('DB_HOST', 'sql111.infinityfree.com');
-define('DB_PORT', '3306');
-define('DB_NAME', 'if0_41581260_mensyu');
-define('DB_USER', 'if0_41581260');
-define('DB_PASS', 'hfy23whc');
+// Prefer environment variables; fall back to local config file.
+// In production: set DB_HOST, DB_NAME, DB_USER, DB_PASS via server env or a
+// gitignored config/local.php that defines these constants before this file.
+$_local_cfg = __DIR__ . '/local.php';
+if (file_exists($_local_cfg)) include_once $_local_cfg;
+
+defined('DB_HOST') || define('DB_HOST', getenv('DB_HOST') ?: 'sql111.infinityfree.com');
+defined('DB_PORT') || define('DB_PORT', getenv('DB_PORT') ?: '3306');
+defined('DB_NAME') || define('DB_NAME', getenv('DB_NAME') ?: 'if0_41581260_mensyu');
+defined('DB_USER') || define('DB_USER', getenv('DB_USER') ?: 'if0_41581260');
+defined('DB_PASS') || define('DB_PASS', getenv('DB_PASS') ?: '');
 
 $_db_instance = null;
 
