@@ -100,7 +100,7 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <script>
-fetch('/api/essays?action=list')
+fetch('/api/essays.php?action=list')
   .then(r => r.json())
   .then(({data}) => {
     const el = document.getElementById('essay-list');

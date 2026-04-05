@@ -267,7 +267,7 @@ async function annotateChar(el, ch) {
 
   const sentence = _currentText;
   try {
-    const r = await fetch('/api/ai_text', {
+    const r = await fetch('/api/ai_text.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({action: 'annotate', word: ch, sentence})
@@ -297,7 +297,7 @@ async function loadQuiz() {
   document.getElementById('test-box').innerHTML = '';
   document.getElementById('modal-spinner').classList.remove('hidden');
   try {
-    const r = await fetch('/api/ai_text', {
+    const r = await fetch('/api/ai_text.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({action: 'quiz', text: _currentText})
@@ -365,7 +365,7 @@ async function saveProgress(author, level, stars) {
   fd.append('level', level);
   fd.append('stars', stars);
   try {
-    await fetch('/api/progress', { method: 'POST', body: fd });
+    await fetch('/api/progress.php', { method: 'POST', body: fd });
     // Reload page progress
     setTimeout(() => location.reload(), 2000);
   } catch(e) {}

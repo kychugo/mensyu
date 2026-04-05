@@ -64,7 +64,7 @@ document.getElementById('reg-form').addEventListener('submit', async e => {
   btn.disabled = true;
   btn.textContent = '注冊中…';
 
-  const res  = await fetch('/api/auth', { method: 'POST', body: new FormData(form) });
+  const res  = await fetch('/api/auth.php', { method: 'POST', body: new FormData(form) });
   const data = await res.json();
   const msg  = document.getElementById('msg');
   msg.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');

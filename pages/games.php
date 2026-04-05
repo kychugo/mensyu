@@ -235,7 +235,7 @@ window.addEventListener('resize', () => { if (!gameRunning) resizeCanvas(); });
 <?php if ($game_type === 'matching'): ?>
 <script>
 // Load essay list
-fetch('/api/essays?action=list')
+fetch('/api/essays.php?action=list')
   .then(r => r.json())
   .then(({data}) => {
     const sel = document.getElementById('essay-pick');
@@ -260,7 +260,7 @@ async function loadPairs() {
   const er = await fetch(`/api/essays?action=get&id=${esId}`);
   const {data: essay} = await er.json();
 
-  const r = await fetch('/api/ai_text', {
+  const r = await fetch('/api/ai_text.php', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action:'pairs', text: essay.content, count:6})
