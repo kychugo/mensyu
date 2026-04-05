@@ -12,8 +12,9 @@ require_once __DIR__ . '/includes/geo_guard.php';
 geo_guard();
 
 // ── Pseudo-cron: auto-post every N hours (no cmd needed) ─────────
-// Only checked on ~1-in-10 requests to keep the overhead minimal.
-if (rand(1, 10) === 1) {
+// Only checked on 1-in-10 requests to keep the overhead minimal.
+define('PSEUDO_CRON_SAMPLE_RATE', 10);
+if (rand(1, PSEUDO_CRON_SAMPLE_RATE) === 1) {
     index_pseudo_cron();
 }
 

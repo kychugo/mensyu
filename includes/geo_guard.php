@@ -10,6 +10,8 @@
  * The guard only activates when app_settings.geo_guard_enabled = '1'.
  */
 
+define('GEO_CACHE_TTL_SECONDS', 86400); // 24 hours
+
 function geo_guard(): void {
     // ── 1. Check if feature is enabled ───────────────────────────────
     try {
@@ -44,7 +46,7 @@ function geo_guard(): void {
 
         if ($cached) {
             $age = time() - strtotime($cached['cached_at']);
-            if ($age < 86400) {
+            if ($age < GEO_CACHE_TTL_SECONDS) {
                 geo_apply_block($ip, $cached['country_code'], (bool)$cached['is_proxy']);
                 return;
             }

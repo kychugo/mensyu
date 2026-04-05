@@ -9,6 +9,8 @@
 
 // ── Public helper ─────────────────────────────────────────────────────────────
 
+define('ERROR_LOG_MAX_RECORDS', 2000);
+
 function error_log_db(
     string  $level,
     string  $message,
@@ -36,9 +38,9 @@ function error_log_db(
             ]
         );
 
-        // Keep at most 2000 error records
+        // Keep at most ERROR_LOG_MAX_RECORDS error records
         db_query('DELETE FROM error_logs WHERE id NOT IN (
-            SELECT id FROM (SELECT id FROM error_logs ORDER BY created_at DESC LIMIT 2000) t
+            SELECT id FROM (SELECT id FROM error_logs ORDER BY created_at DESC LIMIT ' . ERROR_LOG_MAX_RECORDS . ') t
         )');
     } catch (Throwable $e) {
         // Never let error logging itself crash the app
