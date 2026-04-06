@@ -83,7 +83,7 @@ include __DIR__ . '/../includes/header.php';
         ['🔤', '翻譯', '/translate', 'bg-blue-50  hover:bg-blue-100'],
         ['🎮', '遊戲廳', '/games',    'bg-green-50 hover:bg-green-100'],
         ['🍵', '茶館',   '/teahouse', 'bg-amber-50 hover:bg-amber-100'],
-        ['📚', '範文列表','/translate#list','bg-rose-50  hover:bg-rose-100'],
+        ['📚', '12篇範文','/translate#list','bg-rose-50  hover:bg-rose-100'],
     ] as [$icon, $label, $url, $cls]): ?>
     <a href="<?= $url ?>" class="<?= $cls ?> rounded-xl p-4 flex flex-col items-center gap-2 transition-colors text-ink">
       <span class="text-3xl"><?= $icon ?></span>
@@ -93,7 +93,7 @@ include __DIR__ . '/../includes/header.php';
   </div>
 
   <!-- DSE essay list preview -->
-  <h2 class="text-xl font-bold text-ink mb-4">📋 DSE 指定範文（16 篇）</h2>
+  <h2 class="text-xl font-bold text-ink mb-4">📋 DSE中文12篇指定文言範文</h2>
   <div id="essay-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
     <div class="col-span-full text-center text-ink opacity-40 py-4">載入中…</div>
   </div>
