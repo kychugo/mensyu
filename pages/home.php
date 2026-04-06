@@ -93,7 +93,7 @@ include __DIR__ . '/../includes/header.php';
   </div>
 
   <!-- DSE essay list preview -->
-  <h2 class="text-xl font-bold text-ink mb-4">📋 DSE 指定範文（16 篇）</h2>
+  <h2 class="text-xl font-bold text-ink mb-4">📋 DSE中文12篇指定文言範文（16 篇）</h2>
   <div id="essay-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
     <div class="col-span-full text-center text-ink opacity-40 py-4">載入中…</div>
   </div>

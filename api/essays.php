@@ -1,8 +1,8 @@
 <?php
 /**
- * api/essays.php — DSE essay list / content
+ * api/essays.php — DSE中文12篇指定文言範文 list / content
  *
- * GET ?action=list                   → array of {id,title,author,dynasty,genre}
+ * GET ?action=list                   → array of {id,title,author,dynasty,genre,type,category}
  * GET ?action=get&id=N               → full essay object
  */
 
@@ -23,11 +23,13 @@ $essays = json_decode(file_get_contents($file), true) ?? [];
 
 if ($action === 'list') {
     $list = array_map(fn($e) => [
-        'id'     => $e['id'],
-        'title'  => $e['title'],
-        'author' => $e['author'],
-        'dynasty'=> $e['dynasty'],
-        'genre'  => $e['genre'],
+        'id'       => $e['id'],
+        'title'    => $e['title'],
+        'author'   => $e['author'],
+        'dynasty'  => $e['dynasty'],
+        'genre'    => $e['genre'],
+        'type'     => $e['type'] ?? '',
+        'category' => $e['category'] ?? '',
     ], $essays);
     echo json_encode(['success' => true, 'data' => $list]);
     exit;

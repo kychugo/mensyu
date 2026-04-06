@@ -14,7 +14,7 @@ $essay_id = (int)($_GET['essay_id'] ?? 0);
 
   <!-- Essay selector -->
   <div id="essay-list-section" class="mb-6">
-    <label class="block text-sm font-medium text-ink mb-2">選擇 DSE 範文（可選）</label>
+    <label class="block text-sm font-medium text-ink mb-2">選擇 DSE中文12篇指定文言範文（可選）</label>
     <select id="essay-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gold">
       <option value="">── 自由輸入 ──</option>
     </select>
