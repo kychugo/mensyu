@@ -259,7 +259,7 @@ async function annotateChar(el, ch) {
   tip.classList.remove('hidden');
   tip.style.left = (rect.left + window.scrollX) + 'px';
   tip.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
-  tip.textContent = '載入中…';
+  tip.textContent = '🔍 查詢字義中…';
 
   if (annotationCache[ch]) {
     showTip(tip, annotationCache[ch]);

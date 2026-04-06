@@ -3,9 +3,10 @@
  * api/admin.php — Admin REST API
  *
  * All endpoints require admin session.
- * GET  ?action=dashboard|users|errors|usage|posts|settings
+ * GET  ?action=dashboard|users|errors|usage|posts|settings|ai_config
  * POST action=toggle_admin|toggle_ban|delete_user|clear_errors|
- *             delete_post|delete_comment|run_cron|update_setting
+ *             delete_post|delete_comment|run_cron|update_setting|
+ *             save_ai_key|delete_ai_key
  */
 
 require_once __DIR__ . '/../includes/session.php';
@@ -32,6 +33,7 @@ if ($method === 'GET') {
         'usage'     => admin_usage(),
         'posts'     => admin_posts(),
         'settings'  => admin_settings(),
+        'ai_config' => admin_ai_config(),
         default     => json_out(['success' => false, 'message' => 'Unknown action']),
     };
     exit;
@@ -56,6 +58,8 @@ if ($method === 'POST') {
         'delete_comment'  => admin_delete_comment(),
         'run_cron'        => admin_run_cron(),
         'update_setting'  => admin_update_setting(),
+        'save_ai_key'     => admin_save_ai_key(),
+        'delete_ai_key'   => admin_delete_ai_key(),
         default           => json_out(['success' => false, 'message' => 'Unknown action']),
     };
     exit;
@@ -288,6 +292,69 @@ function admin_update_setting(): void {
     db_query(
         'UPDATE app_settings SET setting_value=? WHERE setting_key=?',
         [$value, $key]
+    );
+    json_out(['success' => true]);
+}
+
+// ── AI config handlers ────────────────────────────────────────────
+
+function admin_ai_config(): void {
+    $keysJson = db_query(
+        "SELECT setting_value FROM app_settings WHERE setting_key='deepseek_api_keys'"
+    )->fetchColumn();
+    $keys = json_decode($keysJson ?: '[]', true);
+    json_out([
+        'success'       => true,
+        'deepseek_keys' => $keys,
+        'pollinations_endpoint' => 'https://text.pollinations.ai/openai',
+        'pollinations_models'   => ['deepseek', 'glm', 'qwen-large', 'qwen-safety'],
+    ]);
+}
+
+function admin_save_ai_key(): void {
+    $newKey = trim($_POST['api_key'] ?? '');
+    $index  = isset($_POST['index']) ? (int)$_POST['index'] : -1;
+
+    if ($newKey === '') {
+        json_out(['success' => false, 'message' => 'API key cannot be empty']);
+        return;
+    }
+
+    $keysJson = db_query(
+        "SELECT setting_value FROM app_settings WHERE setting_key='deepseek_api_keys'"
+    )->fetchColumn();
+    $keys = json_decode($keysJson ?: '[]', true);
+
+    if ($index >= 0 && $index < count($keys)) {
+        $keys[$index] = $newKey;  // edit existing
+    } else {
+        $keys[] = $newKey;        // add new
+    }
+
+    db_query(
+        "UPDATE app_settings SET setting_value=? WHERE setting_key='deepseek_api_keys'",
+        [json_encode(array_values($keys))]
+    );
+    json_out(['success' => true]);
+}
+
+function admin_delete_ai_key(): void {
+    $index = (int)($_POST['index'] ?? -1);
+
+    $keysJson = db_query(
+        "SELECT setting_value FROM app_settings WHERE setting_key='deepseek_api_keys'"
+    )->fetchColumn();
+    $keys = json_decode($keysJson ?: '[]', true);
+
+    if ($index < 0 || $index >= count($keys)) {
+        json_out(['success' => false, 'message' => 'Invalid index']);
+        return;
+    }
+
+    array_splice($keys, $index, 1);
+    db_query(
+        "UPDATE app_settings SET setting_value=? WHERE setting_key='deepseek_api_keys'",
+        [json_encode(array_values($keys))]
     );
     json_out(['success' => true]);
 }

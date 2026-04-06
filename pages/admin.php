@@ -33,6 +33,7 @@ include __DIR__ . '/../includes/header.php';
       ['content',   '📝', '內容管理'],
       ['cron',      '⏰', 'Cron / 貼文'],
       ['settings',  '⚙️', '系統設定'],
+      ['ai_config', '🤖', 'AI 設定'],
     ] as [$id, $ico, $lbl]): ?>
     <button data-tab="<?= $id ?>" onclick="switchTab('<?= $id ?>')"
       class="tab-btn px-4 py-1.5 rounded-full text-sm font-medium transition-colors hover:bg-gold hover:text-ink">
@@ -177,6 +178,55 @@ include __DIR__ . '/../includes/header.php';
       <div class="text-center text-gray-400 py-8 animate-pulse">載入中…</div>
     </div>
   </div>
+
+  <!-- ── AI Config ──────────────────────────────────────────────── -->
+  <div id="tab-ai_config" class="tab-content hidden">
+    <div class="max-w-2xl space-y-6">
+      <!-- Pollinations info -->
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-ink mb-3">🌸 主要 AI 服務（Pollinations.ai）</h3>
+        <div class="text-sm text-gray-600 space-y-1">
+          <p>端點：<code class="bg-gray-100 px-1 rounded text-xs" id="ai-endpoint">—</code></p>
+          <p>模型（按優先順序嘗試）：<span id="ai-models" class="text-xs text-gray-500">—</span></p>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">如所有 Pollinations 模型失敗，系統自動嘗試 DeepSeek 備用。</p>
+      </div>
+
+      <!-- DeepSeek keys -->
+      <div class="bg-white rounded-xl shadow p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-ink">🔑 DeepSeek API Keys（備用，多 Key 自動切換）</h3>
+          <button onclick="showAddKeyForm()"
+            class="text-xs bg-ink text-gold px-3 py-1.5 rounded-lg hover:bg-ink-light transition-colors">
+            + 新增
+          </button>
+        </div>
+        <div id="deepseek-keys-list" class="space-y-2 mb-4">
+          <div class="text-gray-400 text-sm text-center py-4 animate-pulse">載入中…</div>
+        </div>
+        <!-- Add/Edit form -->
+        <div id="key-form" class="hidden bg-gray-50 rounded-lg p-4 space-y-3">
+          <p id="key-form-title" class="text-sm font-semibold text-ink">新增 API Key</p>
+          <input type="text" id="key-input" placeholder="sk-xxxxxxxxxxxxxxxx"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gold">
+          <input type="hidden" id="key-edit-index" value="-1">
+          <div class="flex gap-2">
+            <button onclick="saveKey()"
+              class="flex-1 bg-ink text-gold text-sm py-2 rounded-lg hover:bg-ink-light transition-colors">
+              儲存
+            </button>
+            <button onclick="hideKeyForm()"
+              class="px-4 bg-gray-200 text-ink text-sm py-2 rounded-lg hover:bg-gray-300 transition-colors">
+              取消
+            </button>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-3">
+          Keys 按順序嘗試，成功時立即使用，失敗自動切換下一個。Keys 以加密方式存儲於資料庫。
+        </p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -209,6 +259,7 @@ function loadTab(id) {
   if (id === 'content')   loadContent(1);
   if (id === 'cron')      loadCronInfo();
   if (id === 'settings')  loadSettings();
+  if (id === 'ai_config') loadAiConfig();
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────
@@ -456,7 +507,7 @@ function renderPager(containerId, total, perPage, current, loadFn) {
 
 // ── API helpers ───────────────────────────────────────────────────
 async function api(method, params = {}) {
-  let url = '/api/admin?' + new URLSearchParams(params);
+  let url = '/api/admin.php?' + new URLSearchParams(params);
   const r = await fetch(url, {method: 'GET'});
   return r.json();
 }
@@ -467,6 +518,78 @@ async function apiPost(params = {}) {
   for (const [k, v] of Object.entries(params)) fd.append(k, v);
   const r = await fetch('/api/admin.php', {method: 'POST', body: fd});
   return r.json();
+}
+
+// ── AI Config ─────────────────────────────────────────────────────
+let _aiKeys = [];
+
+async function loadAiConfig() {
+  const data = await api('GET', {action:'ai_config'});
+  if (!data.success) return;
+
+  document.getElementById('ai-endpoint').textContent = data.pollinations_endpoint || '—';
+  document.getElementById('ai-models').textContent = (data.pollinations_models || []).join(' → ');
+
+  _aiKeys = data.deepseek_keys || [];
+  renderKeysList();
+}
+
+function renderKeysList() {
+  const el = document.getElementById('deepseek-keys-list');
+  if (_aiKeys.length === 0) {
+    el.innerHTML = '<p class="text-gray-400 text-sm text-center py-3">尚未設定任何 DeepSeek API Key</p>';
+    return;
+  }
+  el.innerHTML = _aiKeys.map((k, i) => {
+    const masked = k.length > 8 ? k.slice(0, 4) + '•••' + k.slice(-4) : '•••';
+    return `<div class="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+      <span class="text-xs font-mono flex-1 text-gray-700">${i + 1}. ${masked}</span>
+      <button onclick="editKey(${i})"
+        class="text-xs px-2 py-1 bg-yellow-100 hover:bg-yellow-200 rounded">編輯</button>
+      <button onclick="deleteKey(${i})"
+        class="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded">刪除</button>
+    </div>`;
+  }).join('');
+}
+
+function showAddKeyForm() {
+  document.getElementById('key-form-title').textContent = '新增 API Key';
+  document.getElementById('key-input').value = '';
+  document.getElementById('key-edit-index').value = '-1';
+  document.getElementById('key-form').classList.remove('hidden');
+  document.getElementById('key-input').focus();
+}
+
+function editKey(i) {
+  document.getElementById('key-form-title').textContent = `編輯 Key #${i + 1}`;
+  document.getElementById('key-input').value = _aiKeys[i] || '';
+  document.getElementById('key-edit-index').value = i;
+  document.getElementById('key-form').classList.remove('hidden');
+  document.getElementById('key-input').focus();
+}
+
+function hideKeyForm() {
+  document.getElementById('key-form').classList.add('hidden');
+}
+
+async function saveKey() {
+  const key   = document.getElementById('key-input').value.trim();
+  const index = parseInt(document.getElementById('key-edit-index').value);
+  if (!key) { alert('請輸入 API Key'); return; }
+  const {success, message} = await apiPost({action:'save_ai_key', api_key:key, index});
+  if (success) {
+    hideKeyForm();
+    tabLoaded['ai_config'] = false;
+    loadAiConfig();
+  } else {
+    alert('儲存失敗：' + (message || '未知錯誤'));
+  }
+}
+
+async function deleteKey(i) {
+  if (!confirm(`確定刪除 Key #${i + 1}？`)) return;
+  const {success} = await apiPost({action:'delete_ai_key', index:i});
+  if (success) { tabLoaded['ai_config'] = false; loadAiConfig(); }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────

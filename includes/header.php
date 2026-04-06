@@ -85,9 +85,8 @@ if (!empty($_user['is_admin'])) {
     <?php if ($_user): ?>
       <div class="mb-2 text-paper">👤 <?= db_escape($_user['username']) ?></div>
       <a href="/profile" class="block text-paper hover:text-gold mb-1">個人主頁</a>
-      <form method="post" action='/api/auth.php' class="inline">
+      <form id="logout-form-sidebar" onsubmit="handleLogout(event)" class="inline">
         <input type="hidden" name="action" value="logout">
-        <input type="hidden" name="csrf_token" value="<?= $_csrf ?>">
         <button type="submit" class="text-paper hover:text-brush-light">登出</button>
       </form>
     <?php else: ?>

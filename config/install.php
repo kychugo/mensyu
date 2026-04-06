@@ -126,6 +126,7 @@ function db_install(): void {
         ['cron_last_run',       '0'],
         ['cron_interval_hours', '2'],
         ['platform_name',       '文樞 Mensyu'],
+        ['deepseek_api_keys',   '[]'],  // JSON array of DeepSeek API keys
     ];
     $stmt = $pdo->prepare(
         'INSERT IGNORE INTO app_settings (setting_key, setting_value) VALUES (?, ?)'

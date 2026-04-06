@@ -8,6 +8,7 @@
 
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../config/ai.php';
+require_once __DIR__ . '/../config/db.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -28,7 +29,7 @@ $result = match ($action) {
     'post'      => ai_text_post($body['author'] ?? '', $body['past'] ?? ''),
     'comment'   => ai_text_comment($body['author'] ?? '', $body['post'] ?? '', $body['past'] ?? ''),
     default     => null,
-};
+];
 
 if ($result === null) {
     http_response_code(422);
@@ -40,12 +41,18 @@ echo json_encode(['success' => true, 'data' => $result]);
 
 // ── Core call ─────────────────────────────────────────────────────
 
+/**
+ * Try Pollinations first (all configured models), then fall back to
+ * DeepSeek official API using each stored key in turn.
+ */
 function ai_text_call(array $messages): ?string {
+    // 1. Try each Pollinations model
     foreach (AI_TEXT_MODELS as $model) {
         $result = ai_text_request($model, $messages);
         if ($result !== null) return $result;
     }
-    return null;
+    // 2. Fallback: DeepSeek official API
+    return ai_deepseek_call($messages);
 }
 
 function ai_text_request(string $model, array $messages): ?string {
@@ -75,6 +82,60 @@ function ai_text_request(string $model, array $messages): ?string {
     return $json['choices'][0]['message']['content'] ?? null;
 }
 
+/**
+ * DeepSeek official API fallback.
+ * Reads API keys from app_settings.deepseek_api_keys (JSON array).
+ * Auto-switches to next key on failure.
+ */
+function ai_deepseek_call(array $messages): ?string {
+    try {
+        $keysJson = db_query(
+            "SELECT setting_value FROM app_settings WHERE setting_key='deepseek_api_keys'"
+        )->fetchColumn();
+        $keys = json_decode($keysJson ?: '[]', true);
+    } catch (Throwable $e) {
+        return null;
+    }
+
+    if (empty($keys)) return null;
+
+    foreach ($keys as $key) {
+        $key = trim($key);
+        if ($key === '') continue;
+        $result = ai_deepseek_request($key, $messages);
+        if ($result !== null) return $result;
+    }
+    return null;
+}
+
+function ai_deepseek_request(string $apiKey, array $messages): ?string {
+    $payload = json_encode([
+        'model'    => 'deepseek-chat',
+        'messages' => $messages,
+        'stream'   => false,
+    ]);
+
+    $ctx = stream_context_create([
+        'http' => [
+            'method'  => 'POST',
+            'header'  => implode("\r\n", [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $apiKey,
+            ]),
+            'content' => $payload,
+            'timeout' => 30,
+            'ignore_errors' => true,
+        ],
+    ]);
+
+    $response = @file_get_contents('https://api.deepseek.com/chat/completions', false, $ctx);
+    if ($response === false) return null;
+
+    $json = json_decode($response, true);
+    // DeepSeek returns same OpenAI-compatible format
+    return $json['choices'][0]['message']['content'] ?? null;
+}
+
 // ── JSON parse helpers ────────────────────────────────────────────
 
 function ai_parse_json(string $text): mixed {
@@ -99,11 +160,25 @@ function ai_text_translate(string $text): ?string {
     if (trim($text) === '') return null;
     $messages = [
         ['role' => 'system', 'content' =>
-            '請將以下文言文逐字翻譯並解釋(直譯，不要意譯)，格式要求：' .
-            '1. 每個字或詞組佔一行 2. 格式：字詞 - 解釋 3. 最後加上整句翻譯 4. 使用繁體中文'],
+            "請將以下文言文逐字翻譯並解釋(直譯，不要意譯)，格式要求：\n\n" .
+            "原文：\n[顯示原文句子]\n\n" .
+            "語譯：\n[顯示完整句子翻譯]\n\n" .
+            "逐字解釋：\n[對每個文字進行解釋，格式為\"字：解釋\"，常見文言字詞用**粗體**標示，切勿解釋標點符號]\n\n" .
+            "要求：\n" .
+            "1. 為每一句(以，。？!：； 作為分隔)進行語譯\n" .
+            "2. 如果該行有常見文言字詞，請為該字及其詞解粗體\n" .
+            "3. 用中文繁體字顯示所有內容\n" .
+            "4. 不要提供思考過程，用<think></think>中間內容\n" .
+            "5. 保持嚴格的格式，使用標題和清晰的分段\n" .
+            "6. 不要在任何地方使用多餘的星號(*)\n" .
+            "7. 不要使用任何裝飾性符號或分隔線\n" .
+            "8. 確保每部分都有明確的標題（原文、語譯、逐字解釋）\n" .
+            "9. 逐字解釋只解釋文字字符，不解釋標點符號如，。？!等\n\n" .
+            "必須注意以下要求，務必跟從：\n" .
+            "為每一句(以，。？!：； 作為分隔)進行語譯，嚴禁整句進行語譯。"],
         ['role' => 'user', 'content' => $text],
     ];
-    return ai_text_call($messages); // raw text, wide parse
+    return ai_text_call($messages);
 }
 
 function ai_text_quiz(string $text): ?array {
