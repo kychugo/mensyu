@@ -29,8 +29,9 @@ if ($action === 'list') {
 
         // Sanitise output
         foreach ($posts as &$p) {
-            $p['content']  = db_escape($p['content']);
-            $p['username'] = db_escape($p['username'] ?? '');
+            $p['content']   = db_escape($p['content']);
+            $p['username']  = db_escape($p['username'] ?? '');
+            $p['image_url'] = $p['image_url'] !== null ? db_escape($p['image_url']) : null;
         }
         echo json_encode(['success' => true, 'data' => $posts]);
     } catch (PDOException $e) {
