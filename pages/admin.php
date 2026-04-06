@@ -182,14 +182,59 @@ include __DIR__ . '/../includes/header.php';
   <!-- ── AI Config ──────────────────────────────────────────────── -->
   <div id="tab-ai_config" class="tab-content hidden">
     <div class="max-w-2xl space-y-6">
-      <!-- Pollinations info -->
-      <div class="bg-white rounded-xl shadow p-5">
-        <h3 class="font-bold text-ink mb-3">🌸 主要 AI 服務（Pollinations.ai）</h3>
-        <div class="text-sm text-gray-600 space-y-1">
-          <p>端點：<code class="bg-gray-100 px-1 rounded text-xs" id="ai-endpoint">—</code></p>
-          <p>模型（按優先順序嘗試）：<span id="ai-models" class="text-xs text-gray-500">—</span></p>
+      <!-- Pollinations text config -->
+      <div class="bg-white rounded-xl shadow p-5 space-y-4">
+        <h3 class="font-bold text-ink mb-1">🌸 文字 AI（Pollinations / 主要）</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">文字 API 端點</label>
+            <div class="flex gap-2">
+              <input type="text" id="ai-text-endpoint"
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gold"
+                placeholder="https://text.pollinations.ai/openai">
+              <button onclick="saveAiConfig('ai_text_endpoint', document.getElementById('ai-text-endpoint').value)"
+                class="text-xs bg-ink text-gold px-3 py-2 rounded-lg hover:bg-ink-light transition-colors">儲存</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">文字模型（逗號分隔，按優先順序）</label>
+            <div class="flex gap-2">
+              <input type="text" id="ai-text-models"
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gold"
+                placeholder="deepseek,glm,qwen-large,qwen-safety">
+              <button onclick="saveAiModels('ai_text_models', 'ai-text-models')"
+                class="text-xs bg-ink text-gold px-3 py-2 rounded-lg hover:bg-ink-light transition-colors">儲存</button>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">如所有模型失敗，系統自動嘗試 DeepSeek 備用。</p>
+          </div>
         </div>
-        <p class="text-xs text-gray-400 mt-2">如所有 Pollinations 模型失敗，系統自動嘗試 DeepSeek 備用。</p>
+      </div>
+
+      <!-- Pollinations image config -->
+      <div class="bg-white rounded-xl shadow p-5 space-y-4">
+        <h3 class="font-bold text-ink mb-1">🖼️ 圖像 AI（Pollinations）</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">圖像 API 端點</label>
+            <div class="flex gap-2">
+              <input type="text" id="ai-image-endpoint"
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gold"
+                placeholder="https://gen.pollinations.ai/prompt/">
+              <button onclick="saveAiConfig('ai_image_endpoint', document.getElementById('ai-image-endpoint').value)"
+                class="text-xs bg-ink text-gold px-3 py-2 rounded-lg hover:bg-ink-light transition-colors">儲存</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">圖像模型（逗號分隔，按優先順序）</label>
+            <div class="flex gap-2">
+              <input type="text" id="ai-image-models"
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gold"
+                placeholder="gptimage,wan-image,qwen-image,klein,zimage,flux">
+              <button onclick="saveAiModels('ai_image_models', 'ai-image-models')"
+                class="text-xs bg-ink text-gold px-3 py-2 rounded-lg hover:bg-ink-light transition-colors">儲存</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- DeepSeek keys -->
@@ -222,7 +267,7 @@ include __DIR__ . '/../includes/header.php';
           </div>
         </div>
         <p class="text-xs text-gray-400 mt-3">
-          Keys 按順序嘗試，成功時立即使用，失敗自動切換下一個。Keys 以加密方式存儲於資料庫。
+          Keys 按順序嘗試，成功時立即使用，失敗自動切換下一個。
         </p>
       </div>
     </div>
@@ -527,11 +572,37 @@ async function loadAiConfig() {
   const data = await api('GET', {action:'ai_config'});
   if (!data.success) return;
 
-  document.getElementById('ai-endpoint').textContent = data.pollinations_endpoint || '—';
-  document.getElementById('ai-models').textContent = (data.pollinations_models || []).join(' → ');
+  document.getElementById('ai-text-endpoint').value  = data.text_endpoint  || '';
+  document.getElementById('ai-image-endpoint').value = data.image_endpoint || '';
+  document.getElementById('ai-text-models').value    = (data.text_models  || []).join(',');
+  document.getElementById('ai-image-models').value   = (data.image_models || []).join(',');
 
   _aiKeys = data.deepseek_keys || [];
   renderKeysList();
+}
+
+async function saveAiConfig(configKey, value) {
+  if (!value.trim()) { alert('不能為空'); return; }
+  const {success, message} = await apiPost({action:'update_ai_config', config_key:configKey, config_value:value.trim()});
+  if (success) {
+    alert('已儲存');
+  } else {
+    alert('儲存失敗：' + (message || '未知錯誤'));
+  }
+}
+
+async function saveAiModels(configKey, inputId) {
+  const raw = document.getElementById(inputId).value.trim();
+  if (!raw) { alert('不能為空'); return; }
+  const arr = raw.split(',').map(s => s.trim()).filter(Boolean);
+  if (!arr.length) { alert('請輸入至少一個模型'); return; }
+  const jsonVal = JSON.stringify(arr);
+  const {success, message} = await apiPost({action:'update_ai_config', config_key:configKey, config_value:jsonVal});
+  if (success) {
+    alert('已儲存');
+  } else {
+    alert('儲存失敗：' + (message || '未知錯誤'));
+  }
 }
 
 function renderKeysList() {

@@ -46,16 +46,28 @@ echo json_encode(['success' => true, 'data' => $result]);
  * DeepSeek official API using each stored key in turn.
  */
 function ai_text_call(array $messages): ?string {
+    // Read endpoint and models from DB settings, fall back to compiled-in defaults
+    try {
+        $endpoint   = db_query("SELECT setting_value FROM app_settings WHERE setting_key='ai_text_endpoint'")->fetchColumn();
+        $endpoint   = ($endpoint && $endpoint !== '') ? $endpoint : AI_TEXT_ENDPOINT;
+        $modelsJson = db_query("SELECT setting_value FROM app_settings WHERE setting_key='ai_text_models'")->fetchColumn();
+        $models     = json_decode($modelsJson ?: '[]', true);
+        if (empty($models)) $models = AI_TEXT_MODELS;
+    } catch (Throwable $e) {
+        $endpoint = AI_TEXT_ENDPOINT;
+        $models   = AI_TEXT_MODELS;
+    }
+
     // 1. Try each Pollinations model
-    foreach (AI_TEXT_MODELS as $model) {
-        $result = ai_text_request($model, $messages);
+    foreach ($models as $model) {
+        $result = ai_text_request($endpoint, $model, $messages);
         if ($result !== null) return $result;
     }
     // 2. Fallback: DeepSeek official API
     return ai_deepseek_call($messages);
 }
 
-function ai_text_request(string $model, array $messages): ?string {
+function ai_text_request(string $endpoint, string $model, array $messages): ?string {
     $payload = json_encode([
         'model'    => $model,
         'messages' => $messages,
@@ -75,7 +87,7 @@ function ai_text_request(string $model, array $messages): ?string {
         ],
     ]);
 
-    $response = @file_get_contents(AI_TEXT_ENDPOINT, false, $ctx);
+    $response = @file_get_contents($endpoint, false, $ctx);
     if ($response === false) return null;
 
     $json = json_decode($response, true);

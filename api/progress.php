@@ -63,8 +63,8 @@ if ($action === 'save' && $method === 'POST') {
         db_query(
             'INSERT INTO user_progress (user_id, author_id, level, stars)
              VALUES (?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE stars = GREATEST(stars, VALUES(stars)), updated_at = CURRENT_TIMESTAMP',
-            [$user_id, $author_id, $level, $stars]
+             ON DUPLICATE KEY UPDATE stars = GREATEST(stars, ?), updated_at = CURRENT_TIMESTAMP',
+            [$user_id, $author_id, $level, $stars, $stars]
         );
         progress_check_achievements($user_id, $author_id, $level, $stars);
         echo json_encode(['success' => true]);
