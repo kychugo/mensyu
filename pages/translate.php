@@ -99,7 +99,7 @@ document.getElementById('essay-select').addEventListener('change', function() {
 });
 
 async function loadEssay(id) {
-  const r = await fetch(`/api/essays?action=get&id=${id}`);
+  const r = await fetch(`/api/essays.php?action=get&id=${id}`);
   const {data} = await r.json();
   if (data) document.getElementById('input-text').value = data.content;
 }

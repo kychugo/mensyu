@@ -7,8 +7,33 @@ $page_title  = '遊戲廳';
 $page_active = 'games';
 
 $game_type = $_GET['type']   ?? '';
-$author    = $_GET['author'] ?? 'sushe';
-$level     = (int)($_GET['level'] ?? 1);
+$author    = $_GET['author'] ?? '';
+$level     = (int)($_GET['level'] ?? 0);
+
+// Validate author and level to prevent unexpected array access
+if (!in_array($author, ['sushe', 'hanyu'], true)) $author = '';
+if ($level < 1 || $level > 4) $level = 0;
+
+// Level texts for learning-context matching game (same data as learning.php)
+$level_texts = [
+    'sushe' => [
+        1 => "元豐六年十月十二日夜，解衣欲睡，月色入戶，欣然起行。念無與為樂者，遂至承天寺尋張懷民。懷民亦未寢，相與步於中庭。庭下如積水空明，水中藻荇交橫，蓋竹柏影也。何夜無月？何處無竹柏？但少閒人如吾兩人者耳。",
+        2 => "千古江山，英雄無覓，孫仲謀處。舞榭歌臺，風流總被雨打風吹去。斜陽草樹，尋常巷陌，人道寄奴曾住。想當年，金戈鐵馬，氣吞萬里如虎。元嘉草草，封狼居胥，贏得倉皇北顧。四十三年，望中猶記，烽火揚州路。可堪回首，佛狸祠下，一片神鴉社鼓。憑誰問：廉頗老矣，尚能飯否？",
+        3 => "余自錢塘移守膠西，釋舟楫之安，而服車馬之勞；去雕牆之美，而庇采椽之居；背湖山之觀，而適桑麻之野。始至之日，歲比不登，盜賊滿野，獄訟充斥；而齋廚索然，日食杞菊，人固疑余之不樂也。處之期年，而貌加豐，發之白者，日以反黑。余既樂其風俗之淳，而其吏民亦安余之拙也。於是治其園圃，潔其庭宇，伐安丘、高密之木，以修補破敗，為苟全之計。",
+        4 => "壬戌之秋，七月既望，蘇子與客泛舟游於赤壁之下。清風徐來，水波不興。舉酒屬客，誦明月之詩，歌窈窕之章。少焉，月出於東山之上，徘徊於斗牛之間。白露橫江，水光接天。縱一葦之所如，凌萬頃之茫然。浩浩乎如馮虛御風，而不知其所止；飄飄乎如遺世獨立，羽化而登仙。",
+    ],
+    'hanyu' => [
+        1 => "世有伯樂，然後有千里馬。千里馬常有，而伯樂不常有。故雖有名馬，祇辱於奴隸人之手，駢死於槽櫪之間，不以千里稱也。馬之千里者，一食或盡粟一石。食馬者不知其能千里而食也。是馬也，雖有千里之能，食不飽，力不足，才美不外見，且欲與常馬等不可得，安求其能千里也？策之不以其道，食之不能盡其材，鳴之而不能通其意，執策而臨之，曰：「天下無馬！」嗚呼！其真無馬邪？其真不知馬也！",
+        2 => "古之善鳴者，則為天之所善也，豈苟然哉？余將就木，而子之年尚少，不得與汝偕行，有輟其鳴者矣。余不得與子偕行，而道之不行，豈惟余之憾哉！天之意以謂何如也？東野，勉之，無怠于善鳴！天將和其聲而使鳴國家之盛也，可知而待也。",
+        3 => "生九年，通《詩》、《書》，十七，與遊人之善，既學為文，中年絕交遊，以文字為事。凡所工者，惟古文與詩耳。我之名，天下不見而知之，及其死，天下不聞而悲之，天下不見不聞而悲之者，誰哉？",
+        4 => "嗚呼！吾少孤，及長，不省所怙，惟兄嫂是依。中年，兄歿南方，吾與汝俱幼，從嫂歸葬河陽。既又與汝就食江南，零丁孤苦，未嘗一日相離也。吾上有三兄，皆不幸早世，承先人後者，在孫惟汝，在子惟吾。兩世一身，形單影隻。嗚呼！汝病吾不知時，汝歿吾不知日，生不能相養以共居，歿不能撫汝以盡哀，斂不憑其棺，窆不臨其穴。",
+    ],
+];
+
+// Pre-load text when coming from the learning page
+$learning_text  = ($author && $level > 0 && isset($level_texts[$author][$level]))
+    ? $level_texts[$author][$level]
+    : '';
 
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -234,7 +259,9 @@ window.addEventListener('resize', () => { if (!gameRunning) resizeCanvas(); });
 
 <?php if ($game_type === 'matching'): ?>
 <script>
-// Load essay list
+const LEARNING_TEXT = <?= json_encode($learning_text, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+
+// Load essay list into picker
 fetch('/api/essays.php?action=list')
   .then(r => r.json())
   .then(({data}) => {
@@ -242,10 +269,19 @@ fetch('/api/essays.php?action=list')
     data.forEach(e => {
       sel.appendChild(new Option(`${e.title} — ${e.author}`, e.id));
     });
-    sel.value = <?= $level === 0 ? 0 : $level ?>;
   });
 
 let _pairs = [], _selected = null, _matched = 0, _timer = 0, _timerInt = null;
+
+// When coming from learning page, auto-load pairs from the level text
+if (LEARNING_TEXT) {
+  document.addEventListener('DOMContentLoaded', () => {
+    // Hide the essay picker row since we already have context
+    const pickerRow = document.getElementById('essay-pick');
+    if (pickerRow) pickerRow.closest('div.flex')?.classList.add('hidden');
+    loadPairsFromText(LEARNING_TEXT);
+  });
+}
 
 async function loadPairs() {
   const esId = document.getElementById('essay-pick').value;
@@ -256,14 +292,27 @@ async function loadPairs() {
   document.getElementById('match-result').classList.add('hidden');
   document.getElementById('match-status').classList.add('hidden');
 
-  // Get essay text
-  const er = await fetch(`/api/essays?action=get&id=${esId}`);
+  // Get essay text then generate pairs
+  const er = await fetch(`/api/essays.php?action=get&id=${esId}`);
   const {data: essay} = await er.json();
+  if (!essay) {
+    document.getElementById('match-spinner').classList.add('hidden');
+    document.getElementById('match-board').innerHTML = '<p class="col-span-4 text-red-500 text-sm">⚠️ 無法載入範文，請稍後再試。</p>';
+    return;
+  }
+  await loadPairsFromText(essay.content);
+}
+
+async function loadPairsFromText(text) {
+  document.getElementById('match-spinner').classList.remove('hidden');
+  document.getElementById('match-board').innerHTML = '';
+  document.getElementById('match-result').classList.add('hidden');
+  document.getElementById('match-status').classList.add('hidden');
 
   const r = await fetch('/api/ai_text.php', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({action:'pairs', text: essay.content, count:6})
+    body: JSON.stringify({action:'pairs', text, count:6})
   });
   const {success, data} = await r.json();
   document.getElementById('match-spinner').classList.add('hidden');
@@ -305,7 +354,7 @@ async function loadPairs() {
     el.addEventListener('click', () => selectCard(el));
     board.appendChild(el);
   });
-  
+
   // Achievement tracking
   const done = parseInt(localStorage.getItem('matching_done') || '0') + 1;
   localStorage.setItem('matching_done', done);
