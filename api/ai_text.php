@@ -29,7 +29,7 @@ $result = match ($action) {
     'post'      => ai_text_post($body['author'] ?? '', $body['past'] ?? ''),
     'comment'   => ai_text_comment($body['author'] ?? '', $body['post'] ?? '', $body['past'] ?? ''),
     default     => null,
-];
+};
 
 if ($result === null) {
     http_response_code(422);
