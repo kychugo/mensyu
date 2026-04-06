@@ -217,6 +217,7 @@ function openLevel(lvl, author) {
   _currentAuthor = author;
   _currentText   = (levelTexts[author] && levelTexts[author][lvl]) || '';
   document.getElementById('modal-title').textContent = `第 ${lvl} 關：${levelTitles[author][lvl]}`;
+  document.getElementById('read-author-info').textContent = authorNames[author] + '　' + (author === 'sushe' ? '宋代' : '唐代');
   document.getElementById('level-modal').classList.remove('hidden');
   switchTab('read');
   renderReadText();

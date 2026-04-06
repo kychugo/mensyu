@@ -78,7 +78,7 @@ let _page = 1, _activePostId = null;
 
 async function loadPosts(append = false) {
   if (!append) _page = 1;
-  const r = await fetch(`/api/posts?action=list&page=${_page}`);
+  const r = await fetch(`/api/posts.php?action=list&page=${_page}`);
   const {success, data} = await r.json();
   if (!success) return;
 
@@ -151,7 +151,7 @@ async function openComments(postId) {
   _activePostId = postId;
   document.getElementById('comment-modal').classList.remove('hidden');
   document.getElementById('comment-list').innerHTML = '<div class="text-center text-gray-400 text-sm py-2">載入中…</div>';
-  const r = await fetch(`/api/posts?action=comments&post_id=${postId}`);
+  const r = await fetch(`/api/posts.php?action=comments&post_id=${postId}`);
   const {success, data} = await r.json();
   const list = document.getElementById('comment-list');
   if (!success || data.length === 0) {

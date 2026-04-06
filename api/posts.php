@@ -67,6 +67,12 @@ if (!session_check_auth()) {
 $user = session_get_user();
 
 if ($action === 'add') {
+    $csrf_token = $_POST['csrf_token'] ?? '';
+    if (!csrf_token_verify($csrf_token)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+        exit;
+    }
     $content = trim($_POST['content'] ?? '');
     if (strlen($content) < 2 || strlen($content) > 500) {
         echo json_encode(['success' => false, 'message' => '內容需為 2–500 字']);
@@ -95,6 +101,12 @@ if ($action === 'add') {
 }
 
 if ($action === 'comment') {
+    $csrf_token = $_POST['csrf_token'] ?? '';
+    if (!csrf_token_verify($csrf_token)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+        exit;
+    }
     $post_id = (int)($_POST['post_id'] ?? 0);
     $content = trim($_POST['content'] ?? '');
     if ($post_id <= 0 || strlen($content) < 1 || strlen($content) > 300) {
