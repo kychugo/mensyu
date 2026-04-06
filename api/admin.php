@@ -319,6 +319,11 @@ function admin_save_ai_key(): void {
         json_out(['success' => false, 'message' => 'API key cannot be empty']);
         return;
     }
+    // Basic validation: DeepSeek keys typically start with 'sk-'
+    if (!preg_match('/^sk-[A-Za-z0-9_\-]{8,}$/', $newKey)) {
+        json_out(['success' => false, 'message' => 'API Key 格式不正確（應以 sk- 開頭）']);
+        return;
+    }
 
     $keysJson = db_query(
         "SELECT setting_value FROM app_settings WHERE setting_key='deepseek_api_keys'"

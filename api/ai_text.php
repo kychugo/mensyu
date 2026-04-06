@@ -158,6 +158,9 @@ function ai_parse_json(string $text): mixed {
 
 function ai_text_translate(string $text): ?string {
     if (trim($text) === '') return null;
+    // Prompt instructs the AI to produce three labelled sections per sentence group:
+    //   原文 (original text) | 語譯 (modern Chinese translation, sentence by sentence)
+    //   逐字解釋 (character-by-character gloss, bold for common classical words)
     $messages = [
         ['role' => 'system', 'content' =>
             "請將以下文言文逐字翻譯並解釋(直譯，不要意譯)，格式要求：\n\n" .
