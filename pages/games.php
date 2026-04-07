@@ -38,77 +38,190 @@ $learning_text  = ($author && $level > 0 && isset($level_texts[$author][$level])
 
 include __DIR__ . '/../includes/header.php';
 ?>
+<style>
+:root {
+  --game-primary:   #7fb3d5;
+  --game-secondary: #a2d9ce;
+  --game-highlight: #7dcea0;
+  --game-light-acc: #aed6f1;
+  --game-shadow-l:  0 2px 12px rgba(127,179,213,.15);
+  --game-shadow-m:  0 4px 24px rgba(127,179,213,.2);
+  --game-trans:     all 0.3s cubic-bezier(.4,0,.2,1);
+  --game-radius:    12px;
+}
+.game-card {
+  background: #fff;
+  border-radius: var(--game-radius);
+  box-shadow: var(--game-shadow-l);
+  padding: 28px 24px;
+  border: 2px solid rgba(127,179,213,.1);
+  transition: var(--game-trans);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  text-align: center;
+}
+.game-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:4px;
+  background: linear-gradient(135deg, var(--game-primary), var(--game-secondary));
+}
+.game-card:hover {
+  box-shadow: var(--game-shadow-m);
+  transform: translateY(-6px);
+}
+.game-card .game-icon {
+  font-size: 3.5rem;
+  margin-bottom: 12px;
+  display: block;
+}
+.game-card h2 { font-size: 1.25rem; font-weight: 700; color: #1a1208; margin-bottom: 4px; }
+.game-card p  { font-size: 0.8rem; color: #6b7280; }
+.game-badge {
+  display: inline-block; font-size: 0.7rem; font-weight: 600;
+  padding: 2px 8px; border-radius: 20px; margin-top: 8px;
+  background: linear-gradient(135deg, var(--game-primary), var(--game-secondary));
+  color: #fff;
+}
+.match-card {
+  aspect-ratio: 1;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: var(--game-shadow-l);
+  border: 2px solid transparent;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #1a1208;
+  padding: 6px;
+  cursor: pointer;
+  transition: var(--game-trans);
+  word-break: break-all;
+  line-height: 1.3;
+}
+.match-card:hover { background: #fefce8; box-shadow: var(--game-shadow-m); }
+.match-card.selected { border-color: #c9a84c; background: #fefce8; }
+.match-card.matched  { border-color: #86efac; background: #f0fdf4; color: #166534; }
+.match-card.wrong    { border-color: #fca5a5; background: #fef2f2; }
+</style>
+
 <div class="px-4 md:px-8 py-6 max-w-3xl mx-auto">
-  <h1 class="text-2xl font-bold text-ink mb-6">🎮 遊戲廳</h1>
+  <h1 class="text-2xl font-bold text-ink mb-2">🎮 遊戲廳</h1>
+  <p class="text-sm text-gray-500 mb-6">透過遊戲學習文言文字詞，寓學於樂</p>
 
   <?php if (!$game_type): ?>
   <!-- Game selection -->
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-    <a href="/games?type=breakout"
-       class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow p-6 text-center group">
-      <div class="text-6xl mb-3">🎮</div>
-      <h2 class="text-xl font-bold text-ink mb-1">文磚挑戰</h2>
-      <p class="text-sm text-gray-500">打磚塊遊戲 · 支援觸控</p>
+    <a href="/games?type=breakout" class="game-card">
+      <span class="game-icon">🎮</span>
+      <h2>文磚挑戰</h2>
+      <p>打磚塊遊戲 · 支援觸控</p>
+      <span class="game-badge">打磚塊</span>
     </a>
-    <a href="/games?type=matching"
-       class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow p-6 text-center group">
-      <div class="text-6xl mb-3">🃏</div>
-      <h2 class="text-xl font-bold text-ink mb-1">文言配對</h2>
-      <p class="text-sm text-gray-500">字詞配對遊戲 · 支援觸控</p>
+    <a href="/games?type=matching" class="game-card">
+      <span class="game-icon">🃏</span>
+      <h2>文言配對</h2>
+      <p>字詞配對遊戲 · 支援觸控</p>
+      <span class="game-badge">配對卡</span>
     </a>
+  </div>
+  <!-- Tips -->
+  <div class="mt-8 rounded-2xl p-5" style="background:linear-gradient(135deg,rgba(127,179,213,.08),rgba(162,217,206,.08));border:1px solid rgba(127,179,213,.2);">
+    <h3 class="font-bold text-sm mb-3" style="color:#7fb3d5;">💡 遊戲提示</h3>
+    <ul class="text-sm text-gray-600 space-y-1">
+      <li>• 文磚挑戰：打磚塊消除文字，消滅全部磚塊即過關</li>
+      <li>• 文言配對：選擇範文後 AI 自動生成字詞配對卡</li>
+      <li>• 完成遊戲可獲得成就徽章</li>
+    </ul>
   </div>
 
   <?php elseif ($game_type === 'breakout'): ?>
   <!-- Breakout game -->
   <div class="flex items-center gap-3 mb-4">
-    <a href="/games" class="text-gold hover:underline text-sm">← 返回遊戲廳</a>
+    <a href="/games" class="text-gold hover:underline text-sm flex items-center gap-1">← 返回遊戲廳</a>
   </div>
-  <div class="flex justify-between items-center mb-2 text-sm text-ink">
+  <!-- HUD -->
+  <div class="flex justify-between items-center mb-3 bg-ink text-paper text-sm px-4 py-2 rounded-xl">
     <span>❤️ <span id="lives">3</span></span>
+    <span class="font-bold text-gold">文磚挑戰</span>
     <span>分數：<span id="score">0</span></span>
-    <span>關卡：<span id="level-display">1</span></span>
   </div>
   <div class="relative flex justify-center">
     <canvas id="breakout-canvas" width="480" height="320"
       class="rounded-xl border-2 border-gold shadow-lg bg-ink touch-none w-full max-w-lg"
       style="max-height:60vw;"></canvas>
-    <div id="game-msg" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60 rounded-xl hidden">
-      <div class="text-center">
-        <p id="game-msg-text" class="text-gold text-xl font-bold mb-4"></p>
-        <button onclick="breakoutStart()" class="bg-gold text-ink font-bold px-6 py-2 rounded-lg">開始</button>
+    <div id="game-msg" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 rounded-xl hidden">
+      <div class="text-center px-6">
+        <p id="game-msg-text" class="text-gold text-lg font-bold mb-5 leading-relaxed"></p>
+        <button onclick="breakoutStart()"
+          class="bg-gold text-ink font-bold px-8 py-2.5 rounded-xl text-sm hover:opacity-90 transition-opacity">
+          ▶ 開始遊戲
+        </button>
       </div>
     </div>
   </div>
-  <div class="mt-3 text-center text-xs text-gray-400">桌面：滑鼠左右移動板 | 手機：左右滑動螢幕</div>
+  <div class="mt-3 text-center text-xs text-gray-400">🖥 桌面：滑鼠移動 ｜ 📱 手機：左右滑動螢幕</div>
 
   <?php elseif ($game_type === 'matching'): ?>
   <!-- Matching game -->
-  <div class="flex items-center gap-3 mb-4">
+  <div class="flex flex-wrap items-center gap-3 mb-4">
     <a href="/games" class="text-gold hover:underline text-sm">← 返回遊戲廳</a>
-    <select id="essay-pick" class="text-sm border border-gray-300 rounded px-2 py-1 bg-white">
+    <select id="essay-pick"
+      class="flex-1 min-w-0 text-sm border-2 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-gold transition-colors"
+      style="border-color:rgba(127,179,213,.4);">
       <option value="">選擇範文…</option>
     </select>
-    <button onclick="loadPairs()" class="bg-ink text-gold text-xs font-bold px-3 py-1.5 rounded-lg">載入</button>
+    <button onclick="loadPairs()"
+      class="bg-ink text-gold text-xs font-bold px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity">
+      載入配對
+    </button>
   </div>
-  <div id="match-status" class="text-sm text-ink mb-3 hidden">
-    ⏱ <span id="match-time">0</span>s ·
-    ✅ <span id="match-done">0</span>/<span id="match-total">0</span>
+  <!-- Status bar -->
+  <div id="match-status" class="hidden text-sm bg-white rounded-xl px-4 py-2 mb-4 flex items-center justify-between shadow-sm" style="border:1px solid rgba(127,179,213,.2);">
+    <span>⏱ <span id="match-time">0</span> 秒</span>
+    <span>✅ <span id="match-done">0</span> / <span id="match-total">0</span> 對</span>
   </div>
-  <div id="match-board" class="grid grid-cols-4 gap-2"></div>
-  <div id="match-result" class="hidden mt-6 text-center">
-    <div class="text-4xl mb-2">🎉</div>
-    <p class="font-bold text-lg text-ink mb-1">配對完成！</p>
-    <p class="text-sm text-gray-500">用時 <span id="result-time"></span> 秒</p>
-    <button onclick="loadPairs()" class="mt-3 bg-ink text-gold font-bold px-6 py-2 rounded-lg text-sm">再玩一次</button>
+  <div id="match-board" class="grid grid-cols-4 gap-2 sm:gap-3"></div>
+  <!-- Result -->
+  <div id="match-result" class="hidden mt-8 text-center bg-white rounded-2xl p-8 shadow-lg" style="border:2px solid rgba(127,179,213,.2);">
+    <div class="text-5xl mb-3">🎉</div>
+    <p class="font-bold text-xl text-ink mb-1">配對完成！</p>
+    <p class="text-sm text-gray-500 mb-5">用時 <span id="result-time" class="font-bold text-gold"></span> 秒</p>
+    <button onclick="loadPairs()"
+      class="bg-ink text-gold font-bold px-8 py-2.5 rounded-xl text-sm hover:opacity-90 transition-opacity">
+      再玩一次
+    </button>
   </div>
-  <div id="match-spinner" class="hidden flex justify-center py-8">
-    <div class="w-8 h-8 border-4 border-gold border-t-transparent rounded-full animate-spin"></div>
+  <!-- Spinner -->
+  <div id="match-spinner" class="hidden flex-col items-center py-12 text-center">
+    <div class="w-10 h-10 border-4 rounded-full animate-spin mx-auto" style="border-color:#aed6f1;border-top-color:#7fb3d5;"></div>
+    <p class="mt-4 text-sm" style="color:#7fb3d5;">AI 正在生成配對題目…</p>
   </div>
   <?php endif; ?>
 </div>
 
 <?php if ($game_type === 'breakout'): ?>
 <script>
+// ── roundRect polyfill (Safari / older browsers) ──────────────────
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    this.moveTo(x + r, y);
+    this.lineTo(x + w - r, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r);
+    this.lineTo(x + w, y + h - r);
+    this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    this.lineTo(x + r, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r);
+    this.lineTo(x, y + r);
+    this.quadraticCurveTo(x, y, x + r, y);
+    this.closePath();
+  };
+}
+
 // ── Breakout engine ──────────────────────────────────────────────
 const CSRF = '<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>';
 const canvas = document.getElementById('breakout-canvas');
@@ -300,7 +413,7 @@ async function loadPairs() {
   const esId = document.getElementById('essay-pick').value;
   if (!esId) { alert('請先選擇範文'); return; }
 
-  document.getElementById('match-spinner').classList.remove('hidden');
+  document.getElementById('match-spinner').style.display = 'flex';
   document.getElementById('match-board').innerHTML = '';
   document.getElementById('match-result').classList.add('hidden');
   document.getElementById('match-status').classList.add('hidden');
@@ -309,7 +422,7 @@ async function loadPairs() {
   const er = await fetch(`/api/essays.php?action=get&id=${esId}`);
   const {data: essay} = await er.json();
   if (!essay) {
-    document.getElementById('match-spinner').classList.add('hidden');
+    document.getElementById('match-spinner').style.display = 'none';
     document.getElementById('match-board').innerHTML = '<p class="col-span-4 text-red-500 text-sm">⚠️ 無法載入範文，請稍後再試。</p>';
     return;
   }
@@ -317,7 +430,7 @@ async function loadPairs() {
 }
 
 async function loadPairsFromText(text) {
-  document.getElementById('match-spinner').classList.remove('hidden');
+  document.getElementById('match-spinner').style.display = 'flex';
   document.getElementById('match-board').innerHTML = '';
   document.getElementById('match-result').classList.add('hidden');
   document.getElementById('match-status').classList.add('hidden');
@@ -328,7 +441,7 @@ async function loadPairsFromText(text) {
     body: JSON.stringify({action:'pairs', text, count:6})
   });
   const {success, data} = await r.json();
-  document.getElementById('match-spinner').classList.add('hidden');
+  document.getElementById('match-spinner').style.display = 'none';
 
   if (!success || !Array.isArray(data) || data.length === 0) {
     document.getElementById('match-board').innerHTML = '<p class="col-span-4 text-red-500 text-sm">⚠️ 無法載入配對，請稍後再試。</p>';
@@ -360,7 +473,7 @@ async function loadPairsFromText(text) {
   board.innerHTML = '';
   cards.forEach(card => {
     const el = document.createElement('button');
-    el.className = 'aspect-square bg-white rounded-xl shadow text-center flex items-center justify-center text-sm font-serif font-semibold text-ink p-1 cursor-pointer hover:bg-yellow-50 transition-colors border-2 border-transparent';
+    el.className = 'match-card';
     el.textContent = card.text;
     el.dataset.id   = card.id;
     el.dataset.type = card.type;
@@ -384,7 +497,7 @@ async function grantGameAchievement(game) {
 function selectCard(el) {
   if (el.classList.contains('matched') || el.classList.contains('selected')) return;
 
-  el.classList.add('selected', 'border-gold', 'bg-yellow-50');
+  el.classList.add('selected');
 
   if (!_selected) {
     _selected = el;
@@ -395,8 +508,8 @@ function selectCard(el) {
   if (a.dataset.id === b.dataset.id && a.dataset.type !== b.dataset.type) {
     // Match!
     [a, b].forEach(c => {
-      c.classList.remove('selected', 'border-gold');
-      c.classList.add('matched', 'bg-green-100', 'border-green-400', 'text-green-800');
+      c.classList.remove('selected');
+      c.classList.add('matched');
       c.disabled = true;
     });
     _matched++;
@@ -409,13 +522,12 @@ function selectCard(el) {
     }
   } else {
     // No match
-    [a, b].forEach(c => c.classList.add('bg-red-50', 'border-red-300'));
+    [a, b].forEach(c => c.classList.add('wrong'));
     setTimeout(() => {
       [a, b].forEach(c => {
-        c.classList.remove('selected', 'border-gold', 'bg-yellow-50', 'bg-red-50', 'border-red-300');
-        c.classList.add('border-transparent', 'bg-white');
+        c.classList.remove('selected', 'wrong');
       });
-    }, 800);
+    }, 700);
   }
   _selected = null;
 }

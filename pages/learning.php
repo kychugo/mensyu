@@ -128,6 +128,90 @@ include __DIR__ . '/../includes/header.php';
   <?php endif; ?>
 </div>
 
+<!-- Translation CSS (matches translate.php design) -->
+<style>
+:root {
+  --tran-primary:   #7fb3d5;
+  --tran-secondary: #a2d9ce;
+  --tran-highlight: #7dcea0;
+  --tran-light-acc: #aed6f1;
+  --tran-border-rs: 6px;
+  --tran-shadow-l:  0 2px 12px rgba(127,179,213,.15);
+  --tran-trans:     all 0.3s cubic-bezier(.4,0,.2,1);
+}
+.tran-block {
+  margin-bottom: 20px; padding-bottom: 16px;
+  border-bottom: 2px dashed var(--tran-light-acc);
+}
+.tran-block:last-child { border-bottom: none; margin-bottom: 0; }
+.tran-block-title {
+  font-weight: 600; color: var(--tran-primary);
+  margin-bottom: 10px; font-size: 0.9rem;
+  font-family: 'Noto Serif TC', serif;
+}
+.tran-original {
+  font-size: 15px; line-height: 1.9;
+  padding: 12px 14px; margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--tran-light-acc), rgba(173,214,241,.3));
+  border-left: 4px solid var(--tran-primary);
+  border-radius: var(--tran-border-rs);
+  font-family: 'Noto Serif TC', serif;
+}
+.tran-translation {
+  padding: 12px 14px; border-radius: var(--tran-border-rs);
+  background: linear-gradient(135deg, rgba(162,217,206,.2), rgba(118,215,196,.1));
+  border-left: 4px solid var(--tran-secondary);
+  line-height: 1.85; font-size: 13.5px;
+}
+.tran-breakdown {
+  margin-top: 12px; padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(169,204,227,.2), rgba(125,206,160,.1));
+  border-radius: var(--tran-border-rs);
+  border-left: 4px solid var(--tran-highlight);
+  font-size: 13px;
+}
+.tran-char-item {
+  margin-bottom: 8px; padding: 5px 0;
+  border-bottom: 1px solid rgba(127,179,213,.1);
+}
+.tran-char-item:last-child { border-bottom: none; }
+.tran-char {
+  color: var(--tran-primary); font-weight: 600; cursor: pointer;
+  border-bottom: 2px dotted var(--tran-primary);
+  padding: 2px 3px; border-radius: 3px;
+  transition: var(--tran-trans);
+}
+.tran-char:hover { background: rgba(127,179,213,.1); }
+.tran-char-exp {
+  display: none; padding: 5px 0 5px 14px; color: #34495e;
+  font-style: italic; margin-top: 4px;
+  border-left: 3px solid var(--tran-secondary);
+}
+.tran-char-exp.revealed { display: block; }
+.tran-sentence-wrap { margin-bottom: 6px; }
+.tran-hidden {
+  background: #ecf0f1; color: transparent;
+  border-radius: 4px; padding: 3px 6px;
+  cursor: pointer; transition: var(--tran-trans);
+  position: relative; display: inline;
+  user-select: none;
+}
+.tran-hidden::before {
+  content: '點擊顯示';
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  color: var(--tran-primary); font-size: 11px;
+  opacity: 1; pointer-events: none; white-space: nowrap;
+}
+.tran-hidden:hover { background: rgba(127,179,213,.2); }
+.tran-hidden.revealed { background: transparent; color: inherit; }
+.tran-hidden.revealed::before { display: none; }
+.tran-common {
+  background: linear-gradient(135deg,rgba(127,179,213,.2),rgba(162,217,206,.2));
+  padding: 1px 5px; border-radius: 3px; font-weight: 600;
+}
+</style>
+
 <!-- Level modal (Read → Play → Test) -->
 <div id="level-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
   <div class="bg-paper rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -150,11 +234,35 @@ include __DIR__ . '/../includes/header.php';
     <div id="tab-read" class="tab-content p-5 hidden">
       <p id="read-author-info" class="text-xs text-gray-500 mb-3 italic"></p>
       <div id="read-text" class="font-serif text-base leading-9 text-ink select-text"></div>
-      <p class="text-xs text-gray-400 mt-4">💡 點擊任意字詞查看 AI 注釋</p>
+      <p class="text-xs text-gray-400 mt-2">💡 點擊任意字詞查看 AI 注釋</p>
       <!-- Annotation tooltip -->
       <div id="annotation-tip"
         class="hidden fixed z-50 bg-ink text-gold text-xs rounded-lg px-3 py-2 shadow-lg max-w-xs pointer-events-none">
       </div>
+
+      <!-- Translation section -->
+      <div class="mt-5 border-t border-gray-100 pt-5">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-bold text-ink">🔤 翻譯解析</span>
+          <button id="btn-translate-read" onclick="triggerTranslation()"
+            class="px-4 py-1.5 text-sm font-semibold rounded-lg border-2 transition-colors"
+            style="border-color:#7fb3d5;color:#7fb3d5;background:#fff;">
+            <span id="btn-translate-label">開始翻譯</span>
+          </button>
+        </div>
+        <!-- Loading -->
+        <div id="tran-loading-inline" class="hidden text-center py-6">
+          <div class="w-7 h-7 rounded-full border-4 animate-spin mx-auto"
+               style="border-color:#aed6f1;border-top-color:#7fb3d5;"></div>
+          <p class="mt-3 text-xs" style="color:#7fb3d5;">正在翻譯解析中，請稍候…</p>
+        </div>
+        <!-- Error -->
+        <div id="tran-error-inline" class="hidden text-sm rounded-lg px-4 py-3 mt-2"
+             style="background:#fadbd8;border:1px solid #f1948a;color:#c0392b;"></div>
+        <!-- Results -->
+        <div id="tran-result-inline" class="mt-2"></div>
+      </div>
+
       <div class="mt-6 flex justify-end">
         <button onclick="switchTab('play')"
           class="px-6 py-2 bg-ink text-gold font-bold rounded-lg hover:bg-ink-light transition-colors text-sm">
@@ -217,9 +325,18 @@ function openLevel(lvl, author) {
   _currentLevel  = lvl;
   _currentAuthor = author;
   _currentText   = (levelTexts[author] && levelTexts[author][lvl]) || '';
+  _tranLoaded    = false;
   document.getElementById('modal-title').textContent = `第 ${lvl} 關：${levelTitles[author][lvl]}`;
   document.getElementById('read-author-info').textContent = authorNames[author] + '　' + (author === 'sushe' ? '宋代' : '唐代');
   document.getElementById('level-modal').classList.remove('hidden');
+  // Reset translation UI
+  document.getElementById('tran-result-inline').innerHTML = '';
+  document.getElementById('tran-error-inline').classList.add('hidden');
+  document.getElementById('tran-loading-inline').classList.add('hidden');
+  const label = document.getElementById('btn-translate-label');
+  if (label) label.textContent = '開始翻譯';
+  const btn = document.getElementById('btn-translate-read');
+  if (btn) btn.disabled = false;
   switchTab('read');
   renderReadText();
 }
@@ -377,6 +494,172 @@ async function saveProgress(author, level, stars) {
 // Game launcher (links to games.php with context)
 function startGame(type) {
   window.open(`/games?type=${type}&author=${_currentAuthor}&level=${_currentLevel}`, '_blank');
+}
+
+// ── Translation (inline in reading tab) ──────────────────────────
+let _tranLoaded = false;
+
+async function triggerTranslation() {
+  const btn   = document.getElementById('btn-translate-read');
+  const label = document.getElementById('btn-translate-label');
+  const loading = document.getElementById('tran-loading-inline');
+  const result  = document.getElementById('tran-result-inline');
+  const errBox  = document.getElementById('tran-error-inline');
+
+  if (!_currentText) return;
+
+  // If already loaded, just toggle visibility
+  if (_tranLoaded) {
+    const visible = result.style.display !== 'none';
+    result.style.display  = visible ? 'none' : '';
+    label.textContent = visible ? '顯示翻譯' : '隱藏翻譯';
+    return;
+  }
+
+  btn.disabled = true;
+  label.textContent = '翻譯中…';
+  loading.classList.remove('hidden');
+  errBox.classList.add('hidden');
+  result.innerHTML = '';
+
+  try {
+    const r = await fetch('/api/ai_text.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({action: 'translate', text: _currentText})
+    });
+    const {success, data} = await r.json();
+    loading.classList.add('hidden');
+    btn.disabled = false;
+
+    if (!success || !data) {
+      errBox.textContent = '⚠️ 翻譯失敗，請稍後再試。';
+      errBox.classList.remove('hidden');
+      label.textContent = '重試翻譯';
+      return;
+    }
+
+    displayTranslationInline(data);
+    _tranLoaded = true;
+    label.textContent = '隱藏翻譯';
+  } catch(e) {
+    loading.classList.add('hidden');
+    btn.disabled = false;
+    errBox.textContent = '⚠️ 網絡錯誤，請稍後再試。';
+    errBox.classList.remove('hidden');
+    label.textContent = '重試翻譯';
+  }
+}
+
+function displayTranslationInline(rawText) {
+  rawText = rawText.replace(/<think>[\s\S]*?<\/think>/g, '');
+  rawText = _cleanTranText(rawText);
+
+  const blocks = _splitTranBlocks(rawText);
+  let html = '';
+  let hasOpenBlock = false;
+
+  for (const block of blocks) {
+    if (block.type === 'original') {
+      if (hasOpenBlock) { html += `</div>`; hasOpenBlock = false; }
+      const fmt = _formatTranOrig(block.content);
+      html += `<div class="tran-block">
+        <div class="tran-block-title">📜 原文</div>
+        <div class="tran-original">${fmt}</div>`;
+      hasOpenBlock = true;
+    } else if (block.type === 'translation') {
+      html += `<div class="tran-block-title">🔤 語譯</div>
+        <div class="tran-translation">${_buildTranHidden(block.content)}</div>`;
+    } else if (block.type === 'breakdown') {
+      html += `<div class="tran-breakdown"><strong>🔍 逐字解釋</strong>${_buildTranBreakdown(block.content)}</div>`;
+      if (hasOpenBlock) { html += `</div>`; hasOpenBlock = false; }
+    }
+  }
+  if (hasOpenBlock) html += `</div>`;
+
+  const box = document.getElementById('tran-result-inline');
+  box.innerHTML = html;
+
+  // Click-to-reveal hidden sentences
+  box.querySelectorAll('.tran-hidden').forEach(el => {
+    el.addEventListener('click', function() { this.classList.toggle('revealed'); });
+  });
+  // Toggle character explanations
+  box.querySelectorAll('.tran-char').forEach(ch => {
+    ch.addEventListener('click', function() {
+      const exp = this.nextElementSibling;
+      if (exp && exp.classList.contains('tran-char-exp')) exp.classList.toggle('revealed');
+    });
+  });
+}
+
+function _splitTranBlocks(text) {
+  const blocks = [];
+  let cur = null;
+  for (const line of text.split('\n')) {
+    const t = line.trim();
+    if (/^原文[：:]?\s*/.test(t)) {
+      if (cur) blocks.push(cur);
+      cur = {type:'original', content: t.replace(/^原文[：:]\s*/,'')};
+    } else if (/^語譯[：:]?\s*/.test(t)) {
+      if (cur) blocks.push(cur);
+      cur = {type:'translation', content: t.replace(/^語譯[：:]\s*/,'')};
+    } else if (/^逐字解釋[：:]?\s*/.test(t)) {
+      if (cur) blocks.push(cur);
+      cur = {type:'breakdown', content: t.replace(/^逐字解釋[：:]\s*/,'')};
+    } else if (cur) {
+      cur.content += '\n' + line;
+    }
+  }
+  if (cur) blocks.push(cur);
+  return blocks;
+}
+
+function _cleanTranText(t) {
+  t = t.replace(/^\*+\s*$/gm,'');
+  t = t.replace(/^-{3,}\s*$/gm,'');
+  t = t.replace(/\n{3,}/g,'\n\n');
+  return t.trim();
+}
+
+function _cleanTranSection(t) {
+  return t.trim().replace(/^[：:]+/,'').replace(/[：:]+$/,'').replace(/^\*+/,'').replace(/\*+$/,'').trim();
+}
+
+function _formatTranOrig(t) {
+  return _escHtml(_cleanTranSection(t))
+    .replace(/\n/g,'<br>')
+    .replace(/\*\*([\s\S]*?)\*\*/g,'<span class="tran-common">$1</span>');
+}
+
+function _buildTranHidden(t) {
+  t = _cleanTranSection(t);
+  return t.split('\n').filter(s=>s.trim()).map(s =>
+    `<div class="tran-sentence-wrap"><span class="tran-hidden">${_escHtml(s.trim())}</span></div>`
+  ).join('');
+}
+
+function _buildTranBreakdown(t) {
+  t = _cleanTranSection(t);
+  return t.split('\n').filter(s=>s.trim()).map(s => {
+    s = s.replace(/^\*+/,'').replace(/\*+$/,'').trim();
+    const parts = s.split(/[：:]/);
+    if (parts.length >= 2) {
+      const ch  = parts[0].trim();
+      const exp = parts.slice(1).join(':').trim();
+      if (/[\u4e00-\u9fff]/.test(ch)) {
+        return `<div class="tran-char-item">
+          <span class="tran-char">${_escHtml(ch)}</span>
+          <div class="tran-char-exp">：${_escHtml(exp)}</div>
+        </div>`;
+      }
+    }
+    return s.trim() ? `<div>${_escHtml(s)}</div>` : '';
+  }).join('');
+}
+
+function _escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>
