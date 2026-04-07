@@ -46,16 +46,22 @@ echo json_encode(['success' => true, 'data' => $result]);
  * DeepSeek official API using each stored key in turn.
  */
 function ai_text_call(array $messages): ?string {
-    // Read endpoint and models from DB settings, fall back to compiled-in defaults
-    try {
-        $endpoint   = db_query("SELECT setting_value FROM app_settings WHERE setting_key='ai_text_endpoint'")->fetchColumn();
-        $endpoint   = ($endpoint && $endpoint !== '') ? $endpoint : AI_TEXT_ENDPOINT;
-        $modelsJson = db_query("SELECT setting_value FROM app_settings WHERE setting_key='ai_text_models'")->fetchColumn();
-        $models     = json_decode($modelsJson ?: '[]', true);
-        if (empty($models)) $models = AI_TEXT_MODELS;
-    } catch (Throwable $e) {
-        $endpoint = AI_TEXT_ENDPOINT;
-        $models   = AI_TEXT_MODELS;
+    // Read endpoint and models from DB settings once per request, fall back to compiled-in defaults
+    static $settingsLoaded = false;
+    static $endpoint       = AI_TEXT_ENDPOINT;
+    static $models         = AI_TEXT_MODELS;
+
+    if (!$settingsLoaded) {
+        try {
+            $ep = db_query("SELECT setting_value FROM app_settings WHERE setting_key='ai_text_endpoint'")->fetchColumn();
+            if ($ep && $ep !== '') $endpoint = $ep;
+            $mj = db_query("SELECT setting_value FROM app_settings WHERE setting_key='ai_text_models'")->fetchColumn();
+            $m  = json_decode($mj ?: '[]', true);
+            if (!empty($m)) $models = $m;
+        } catch (Throwable $e) {
+            // keep compiled-in defaults
+        }
+        $settingsLoaded = true;
     }
 
     // 1. Try each Pollinations model

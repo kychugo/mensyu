@@ -41,16 +41,22 @@ function ai_image_generate(string $author, string $mood): ?string {
               "{$mood}, traditional landscape, poetry atmosphere, " .
               "8K resolution, no text, no watermark, no modern elements";
 
-    // Read endpoint and models from DB, fall back to compiled-in defaults
-    try {
-        $endpoint   = db_query("SELECT setting_value FROM app_settings WHERE setting_key='ai_image_endpoint'")->fetchColumn();
-        $endpoint   = ($endpoint && $endpoint !== '') ? $endpoint : AI_IMAGE_ENDPOINT;
-        $modelsJson = db_query("SELECT setting_value FROM app_settings WHERE setting_key='ai_image_models'")->fetchColumn();
-        $models     = json_decode($modelsJson ?: '[]', true);
-        if (empty($models)) $models = AI_IMAGE_MODELS;
-    } catch (Throwable $e) {
-        $endpoint = AI_IMAGE_ENDPOINT;
-        $models   = AI_IMAGE_MODELS;
+    // Read endpoint and models from DB once per request, fall back to compiled-in defaults
+    static $settingsLoaded = false;
+    static $endpoint       = AI_IMAGE_ENDPOINT;
+    static $models         = AI_IMAGE_MODELS;
+
+    if (!$settingsLoaded) {
+        try {
+            $ep = db_query("SELECT setting_value FROM app_settings WHERE setting_key='ai_image_endpoint'")->fetchColumn();
+            if ($ep && $ep !== '') $endpoint = $ep;
+            $mj = db_query("SELECT setting_value FROM app_settings WHERE setting_key='ai_image_models'")->fetchColumn();
+            $m  = json_decode($mj ?: '[]', true);
+            if (!empty($m)) $models = $m;
+        } catch (Throwable $e) {
+            // keep compiled-in defaults
+        }
+        $settingsLoaded = true;
     }
 
     foreach ($models as $model) {

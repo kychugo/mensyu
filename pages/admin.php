@@ -278,6 +278,13 @@ include __DIR__ . '/../includes/header.php';
 const CSRF = '<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>';
 let _userPage = 1, _errorPage = 1, _contentPage = 1;
 
+// HTML escape helper for safe innerHTML insertion
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+
 // ── Tab switching ─────────────────────────────────────────────────
 const tabLoaded = {};
 function switchTab(id) {
@@ -327,17 +334,17 @@ async function loadDashboard() {
   const errBox = document.getElementById('dash-errors');
   errBox.innerHTML = recent_errors.length ? recent_errors.map(e =>
     `<div class="bg-white rounded-lg p-2 shadow-sm text-xs">
-       <span class="font-bold ${levelColor(e.error_level)}">[${e.error_level}]</span>
-       <span class="ml-1 text-ink">${truncate(e.message, 80)}</span>
-       <div class="text-gray-400 mt-0.5">${e.created_at}</div>
+       <span class="font-bold ${levelColor(e.error_level)}">[${esc(e.error_level)}]</span>
+       <span class="ml-1 text-ink">${esc(truncate(e.message, 80))}</span>
+       <div class="text-gray-400 mt-0.5">${esc(e.created_at)}</div>
      </div>`
   ).join('') : '<p class="text-xs text-gray-400">無錯誤記錄 ✅</p>';
 
   const usrBox = document.getElementById('dash-users');
   usrBox.innerHTML = recent_users.map(u =>
     `<div class="bg-white rounded-lg p-2 shadow-sm text-xs flex justify-between">
-       <span class="font-medium">${u.username} ${u.is_admin ? '👑' : ''}</span>
-       <span class="text-gray-400">${u.created_at?.slice(0,10)}</span>
+       <span class="font-medium">${esc(u.username)} ${u.is_admin ? '👑' : ''}</span>
+       <span class="text-gray-400">${esc(u.created_at?.slice(0,10))}</span>
      </div>`
   ).join('');
 }
@@ -350,8 +357,8 @@ async function loadUsers(page) {
   document.getElementById('user-tbody').innerHTML = data.map(u =>
     `<tr class="border-t border-gray-100 hover:bg-amber-50">
        <td class="px-3 py-2 text-gray-500">${u.id}</td>
-       <td class="px-3 py-2 font-medium">${u.username}</td>
-       <td class="px-3 py-2 text-gray-400">${u.created_at?.slice(0,10)}</td>
+       <td class="px-3 py-2 font-medium">${esc(u.username)}</td>
+       <td class="px-3 py-2 text-gray-400">${esc(u.created_at?.slice(0,10))}</td>
        <td class="px-3 py-2 text-center">${u.is_admin ? '👑' : '—'}</td>
        <td class="px-3 py-2 text-center">${u.is_banned ? '🔒' : '—'}</td>
        <td class="px-3 py-2 text-center">
@@ -363,7 +370,7 @@ async function loadUsers(page) {
            class="text-xs px-2 py-1 rounded ${u.is_banned ? 'bg-green-100 hover:bg-green-200' : 'bg-red-100 hover:bg-red-200'} mr-1">
            ${u.is_banned ? '解除封禁' : '封禁'}
          </button>
-         <button onclick="deleteUser(${u.id}, '${u.username}')"
+         <button onclick="deleteUser(${u.id}, ${JSON.stringify(u.username)})"
            class="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200">
            刪除
          </button>
@@ -394,11 +401,11 @@ async function loadErrors(page) {
   const {data, total} = await api('GET', {action:'errors', page, level});
   document.getElementById('error-tbody').innerHTML = data.map(e =>
     `<tr class="border-t border-gray-100 hover:bg-red-50 align-top">
-       <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">${e.created_at?.slice(0,16)}</td>
-       <td class="px-3 py-2"><span class="font-bold text-xs ${levelColor(e.error_level)}">${e.error_level}</span></td>
-       <td class="px-3 py-2 text-xs max-w-xs break-words">${e.message}</td>
-       <td class="px-3 py-2 text-xs text-gray-400 max-w-[120px] truncate">${e.url || '—'}</td>
-       <td class="px-3 py-2 text-xs text-gray-400">${e.ip_address || '—'}</td>
+       <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">${esc(e.created_at?.slice(0,16))}</td>
+       <td class="px-3 py-2"><span class="font-bold text-xs ${levelColor(e.error_level)}">${esc(e.error_level)}</span></td>
+       <td class="px-3 py-2 text-xs max-w-xs break-words">${esc(e.message)}</td>
+       <td class="px-3 py-2 text-xs text-gray-400 max-w-[120px] truncate">${esc(e.url || '—')}</td>
+       <td class="px-3 py-2 text-xs text-gray-400">${esc(e.ip_address || '—')}</td>
      </tr>`
   ).join('') || '<tr><td colspan="5" class="text-center py-4 text-gray-400">無錯誤記錄 ✅</td></tr>';
   renderPager('error-pagination', total, 30, page, loadErrors);
@@ -450,11 +457,11 @@ async function loadContent(page) {
     `<div class="bg-white rounded-xl shadow p-4 flex items-start gap-3">
        <div class="flex-1 min-w-0">
          <div class="flex items-center gap-2 mb-1">
-           <span class="font-semibold text-sm">${p.username}</span>
+           <span class="font-semibold text-sm">${esc(p.username)}</span>
            ${p.post_type === 'ai' ? '<span class="text-xs bg-amber-100 text-amber-700 rounded px-1">古人</span>' : ''}
-           <span class="text-xs text-gray-400 ml-auto">${p.created_at?.slice(0,16)}</span>
+           <span class="text-xs text-gray-400 ml-auto">${esc(p.created_at?.slice(0,16))}</span>
          </div>
-         <p class="text-xs text-gray-700 font-serif">${p.content}</p>
+         <p class="text-xs text-gray-700 font-serif">${esc(p.content)}</p>
        </div>
        <button onclick="deletePost(${p.id})"
          class="shrink-0 text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">刪除</button>

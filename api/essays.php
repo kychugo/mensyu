@@ -44,7 +44,7 @@ if ($action === 'get') {
             if ($id > 0 && session_check_auth()) {
                 $user_id = session_get_user()['id'];
                 try {
-                    // Only record once per session to avoid spam (usage_stats has no unique constraint)
+                    // Only record once per day per essay to avoid inflating the distinct count
                     $page_key = 'essay_' . $id;
                     // Check if this user has already viewed this essay today to avoid duplicate counts
                     $already = (int)db_query(

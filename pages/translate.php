@@ -418,9 +418,9 @@ function renderQuiz(questions) {
   const box = document.getElementById('quiz-box');
   box.innerHTML = questions.map((q, i) =>
     `<div class="quiz-q">
-       <p>${i+1}. ${q.question}</p>
+       <p>${i+1}. ${escHtml(q.question)}</p>
        ${q.options.map((opt, j) =>
-         `<label><input type="radio" name="q${i}" value="${j}" class="accent-gold"> ${opt}</label>`
+         `<label><input type="radio" name="q${i}" value="${j}" class="accent-gold"> ${escHtml(opt)}</label>`
        ).join('')}
      </div>`
   ).join('');
@@ -473,22 +473,35 @@ function displayTranslation(text) {
 
   const blocks = splitBlocks(text);
   let html = '';
+  let hasOpenTranBlock = false;
   _origTexts = [];
 
   for (const block of blocks) {
     if (block.type === 'original') {
+      if (hasOpenTranBlock) {
+        html += `</div>`;
+        hasOpenTranBlock = false;
+      }
       const fmt = formatOrig(block.content);
       _origTexts.push(fmt);
       html += `<div class="tran-block">
         <div class="tran-block-title">📜 原文</div>
         <div class="tran-original">${fmt}</div>`;
+      hasOpenTranBlock = true;
     } else if (block.type === 'translation') {
       html += `<div class="tran-block-title">🔤 語譯</div>
         <div class="tran-translation">${buildHiddenSentences(block.content)}</div>`;
     } else if (block.type === 'breakdown') {
-      html += `<div class="tran-breakdown"><strong>🔍 逐字解釋</strong>${buildBreakdown(block.content)}</div>
-        </div>`;
+      html += `<div class="tran-breakdown"><strong>🔍 逐字解釋</strong>${buildBreakdown(block.content)}</div>`;
+      if (hasOpenTranBlock) {
+        html += `</div>`;
+        hasOpenTranBlock = false;
+      }
     }
+  }
+
+  if (hasOpenTranBlock) {
+    html += `</div>`;
   }
 
   const result = document.getElementById('tran-result');
@@ -534,7 +547,8 @@ function cleanSection(t) {
 }
 
 function formatOrig(t) {
-  return cleanSection(t)
+  // Escape first, then re-apply only the intended markup (<br> and bold spans)
+  return escHtml(cleanSection(t))
     .replace(/\n/g,'<br>')
     .replace(/\*\*([\s\S]*?)\*\*/g,'<span class="tran-common">$1</span>');
 }
@@ -547,8 +561,7 @@ function buildHiddenSentences(t) {
 }
 
 function buildBreakdown(t) {
-  t = cleanSection(t)
-    .replace(/\*\*([\s\S]*?)\*\*/g,'<span class="tran-common">$1</span>');
+  t = cleanSection(t);
   return t.split('\n').filter(s=>s.trim()).map(s => {
     s = s.replace(/^\*+/,'').replace(/\*+$/,'').trim();
     const parts = s.split(/[：:]/);
@@ -562,7 +575,7 @@ function buildBreakdown(t) {
         </div>`;
       }
     }
-    return s.trim() ? `<div>${s}</div>` : '';
+    return s.trim() ? `<div>${escHtml(s)}</div>` : '';
   }).join('');
 }
 

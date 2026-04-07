@@ -133,7 +133,7 @@ config/db.php（db_connect()）
 
 ### 管理員面板（admin.php）
 - 只有首個註冊用戶擁有管理員權限
-- 7 個分頁：dashboard / users / errors / usage / content / cron / settings
+- 8 個分頁：dashboard / users / errors / usage / content / cron / settings / ai_config
 - 錯誤記錄上限：2000 條
 
 ---
@@ -227,4 +227,11 @@ POST /api/progress.php {action:'save', author_id, level, stars}
 | `/teahouse` | `index.php?page=teahouse` |
 | `/api/essays.php` | 直接存取（白名單） |
 | `/api/ai_text.php` | 直接存取（白名單） |
-| 其他 `/api/*` | 403 禁止 |
+| `/api/ai_image.php` | 直接存取（白名單） |
+| `/api/auth.php` | 直接存取（白名單） |
+| `/api/posts.php` | 直接存取（白名單） |
+| `/api/progress.php` | 直接存取（白名單） |
+| `/api/achievements.php` | 直接存取（白名單） |
+| `/api/cron_post.php` | 直接存取（白名單） |
+| `/api/admin.php` | 直接存取（白名單） |
+| 其他未列入白名單的 `/api/*` | 403 禁止 |
