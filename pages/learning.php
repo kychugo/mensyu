@@ -234,7 +234,7 @@ include __DIR__ . '/../includes/header.php';
     <div id="tab-read" class="tab-content p-5 hidden">
       <p id="read-author-info" class="text-xs text-gray-500 mb-3 italic"></p>
       <div id="read-text" class="font-serif text-base leading-9 text-ink select-text"></div>
-      <p class="text-xs text-gray-400 mt-2">💡 點擊任意字詞查看 AI 注釋</p>
+      <p class="text-xs text-gray-400 mt-2">💡 點擊任意字詞查看 AI 註釋</p>
       <!-- Annotation tooltip -->
       <div id="annotation-tip"
         class="hidden fixed z-50 bg-ink text-gold text-xs rounded-lg px-3 py-2 shadow-lg max-w-xs pointer-events-none">
@@ -552,6 +552,7 @@ async function triggerTranslation() {
 }
 
 function displayTranslationInline(rawText) {
+  // Strip <think>…</think> chain-of-thought sections that some AI models emit
   rawText = rawText.replace(/<think>[\s\S]*?<\/think>/g, '');
   rawText = _cleanTranText(rawText);
 

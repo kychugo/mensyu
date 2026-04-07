@@ -196,7 +196,7 @@ include __DIR__ . '/../includes/header.php';
     </button>
   </div>
   <!-- Spinner -->
-  <div id="match-spinner" class="hidden flex-col items-center py-12 text-center">
+  <div id="match-spinner" style="display:none;" class="flex-col items-center py-12 text-center">
     <div class="w-10 h-10 border-4 rounded-full animate-spin mx-auto" style="border-color:#aed6f1;border-top-color:#7fb3d5;"></div>
     <p class="mt-4 text-sm" style="color:#7fb3d5;">AI 正在生成配對題目…</p>
   </div>
@@ -206,6 +206,13 @@ include __DIR__ . '/../includes/header.php';
 <?php if ($game_type === 'breakout'): ?>
 <script>
 // ── roundRect polyfill (Safari / older browsers) ──────────────────
+// Safari < 15.4 and older Firefox lack native CanvasRenderingContext2D.roundRect().
+// This polyfill draws a rounded rectangle using quadraticCurveTo for corner arcs.
+// @param {number} x  - X coordinate of top-left corner
+// @param {number} y  - Y coordinate of top-left corner
+// @param {number} w  - Width of the rectangle
+// @param {number} h  - Height of the rectangle
+// @param {number} r  - Corner radius (clamped to half the shortest side)
 if (!CanvasRenderingContext2D.prototype.roundRect) {
   CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
     r = Math.min(r, w / 2, h / 2);
