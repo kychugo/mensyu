@@ -3,9 +3,10 @@
  * api/admin.php — Admin REST API
  *
  * All endpoints require admin session.
- * GET  ?action=dashboard|users|errors|usage|posts|settings
+ * GET  ?action=dashboard|users|errors|usage|posts|settings|ai_config
  * POST action=toggle_admin|toggle_ban|delete_user|clear_errors|
- *             delete_post|delete_comment|run_cron|update_setting
+ *             delete_post|delete_comment|run_cron|update_setting|
+ *             save_ai_key|delete_ai_key
  */
 
 require_once __DIR__ . '/../includes/session.php';
@@ -32,6 +33,7 @@ if ($method === 'GET') {
         'usage'     => admin_usage(),
         'posts'     => admin_posts(),
         'settings'  => admin_settings(),
+        'ai_config' => admin_ai_config(),
         default     => json_out(['success' => false, 'message' => 'Unknown action']),
     };
     exit;
@@ -56,6 +58,9 @@ if ($method === 'POST') {
         'delete_comment'  => admin_delete_comment(),
         'run_cron'        => admin_run_cron(),
         'update_setting'  => admin_update_setting(),
+        'save_ai_key'     => admin_save_ai_key(),
+        'delete_ai_key'   => admin_delete_ai_key(),
+        'update_ai_config' => admin_update_ai_config(),
         default           => json_out(['success' => false, 'message' => 'Unknown action']),
     };
     exit;
@@ -170,11 +175,6 @@ function admin_posts(): void {
     )->fetchAll();
     $total = (int)db_query('SELECT COUNT(*) FROM teahouse_posts')->fetchColumn();
 
-    foreach ($posts as &$p) {
-        $p['content']  = db_escape($p['content']);
-        $p['username'] = db_escape($p['username']);
-    }
-
     json_out(['success' => true, 'data' => $posts, 'total' => $total, 'page' => $page]);
 }
 
@@ -233,6 +233,7 @@ function admin_delete_user(): void {
     db_query('DELETE FROM user_progress  WHERE user_id=?', [$target_id]);
     db_query('DELETE FROM achievements   WHERE user_id=?', [$target_id]);
     db_query('DELETE FROM teahouse_comments WHERE user_id=?', [$target_id]);
+    db_query('DELETE FROM teahouse_posts WHERE user_id=?', [$target_id]);
     db_query('DELETE FROM users          WHERE id=?', [$target_id]);
     json_out(['success' => true]);
 }
@@ -283,6 +284,132 @@ function admin_update_setting(): void {
     if (!in_array($key, $allowed, true)) {
         json_out(['success' => false, 'message' => 'Unknown setting']);
         return;
+    }
+
+    db_query(
+        'UPDATE app_settings SET setting_value=? WHERE setting_key=?',
+        [$value, $key]
+    );
+    json_out(['success' => true]);
+}
+
+// ── AI config handlers ────────────────────────────────────────────
+
+function admin_ai_config(): void {
+    $keysJson = db_query(
+        "SELECT setting_value FROM app_settings WHERE setting_key='deepseek_api_keys'"
+    )->fetchColumn();
+    $keys = json_decode($keysJson ?: '[]', true);
+
+    $textEndpoint = db_query(
+        "SELECT setting_value FROM app_settings WHERE setting_key='ai_text_endpoint'"
+    )->fetchColumn() ?: 'https://text.pollinations.ai/openai';
+
+    $imageEndpoint = db_query(
+        "SELECT setting_value FROM app_settings WHERE setting_key='ai_image_endpoint'"
+    )->fetchColumn() ?: 'https://gen.pollinations.ai/prompt/';
+
+    $textModels = json_decode(
+        db_query("SELECT setting_value FROM app_settings WHERE setting_key='ai_text_models'")->fetchColumn() ?: '[]',
+        true
+    ) ?: ['deepseek', 'glm', 'qwen-large', 'qwen-safety'];
+
+    $imageModels = json_decode(
+        db_query("SELECT setting_value FROM app_settings WHERE setting_key='ai_image_models'")->fetchColumn() ?: '[]',
+        true
+    ) ?: ['gptimage', 'wan-image', 'qwen-image', 'klein', 'zimage', 'flux'];
+
+    json_out([
+        'success'          => true,
+        'deepseek_keys'    => $keys,
+        'text_endpoint'    => $textEndpoint,
+        'image_endpoint'   => $imageEndpoint,
+        'text_models'      => $textModels,
+        'image_models'     => $imageModels,
+        // Legacy keys kept for compatibility
+        'pollinations_endpoint' => $textEndpoint,
+        'pollinations_models'   => $textModels,
+    ]);
+}
+
+function admin_save_ai_key(): void {
+    $newKey = trim($_POST['api_key'] ?? '');
+    $index  = isset($_POST['index']) ? (int)$_POST['index'] : -1;
+
+    if ($newKey === '') {
+        json_out(['success' => false, 'message' => 'API key cannot be empty']);
+        return;
+    }
+    // Basic validation: DeepSeek keys typically start with 'sk-'
+    if (!preg_match('/^sk-[A-Za-z0-9_\-]{8,}$/', $newKey)) {
+        json_out(['success' => false, 'message' => 'API Key 格式不正確（應以 sk- 開頭）']);
+        return;
+    }
+
+    $keysJson = db_query(
+        "SELECT setting_value FROM app_settings WHERE setting_key='deepseek_api_keys'"
+    )->fetchColumn();
+    $keys = json_decode($keysJson ?: '[]', true);
+
+    if ($index >= 0 && $index < count($keys)) {
+        $keys[$index] = $newKey;  // edit existing
+    } else {
+        $keys[] = $newKey;        // add new
+    }
+
+    db_query(
+        "UPDATE app_settings SET setting_value=? WHERE setting_key='deepseek_api_keys'",
+        [json_encode(array_values($keys))]
+    );
+    json_out(['success' => true]);
+}
+
+function admin_delete_ai_key(): void {
+    $index = (int)($_POST['index'] ?? -1);
+
+    $keysJson = db_query(
+        "SELECT setting_value FROM app_settings WHERE setting_key='deepseek_api_keys'"
+    )->fetchColumn();
+    $keys = json_decode($keysJson ?: '[]', true);
+
+    if ($index < 0 || $index >= count($keys)) {
+        json_out(['success' => false, 'message' => 'Invalid index']);
+        return;
+    }
+
+    array_splice($keys, $index, 1);
+    db_query(
+        "UPDATE app_settings SET setting_value=? WHERE setting_key='deepseek_api_keys'",
+        [json_encode(array_values($keys))]
+    );
+    json_out(['success' => true]);
+}
+
+function admin_update_ai_config(): void {
+    $key   = trim($_POST['config_key']   ?? '');
+    $value = trim($_POST['config_value'] ?? '');
+
+    $allowed = ['ai_text_endpoint', 'ai_image_endpoint', 'ai_text_models', 'ai_image_models'];
+    if (!in_array($key, $allowed, true)) {
+        json_out(['success' => false, 'message' => 'Unknown config key']);
+        return;
+    }
+
+    // For model lists, validate it's a non-empty JSON array
+    if ($key === 'ai_text_models' || $key === 'ai_image_models') {
+        $arr = json_decode($value, true);
+        if (!is_array($arr) || empty($arr)) {
+            json_out(['success' => false, 'message' => '模型清單格式不正確（需為 JSON 陣列）']);
+            return;
+        }
+    }
+
+    // For endpoints, ensure it looks like a URL
+    if ($key === 'ai_text_endpoint' || $key === 'ai_image_endpoint') {
+        if (!filter_var($value, FILTER_VALIDATE_URL)) {
+            json_out(['success' => false, 'message' => '端點格式不正確（需為有效 URL）']);
+            return;
+        }
     }
 
     db_query(

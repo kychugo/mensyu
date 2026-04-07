@@ -5,6 +5,7 @@
 
 $page_title  = '遊戲廳';
 $page_active = 'games';
+$csrf = csrf_token_generate();
 
 $game_type = $_GET['type']   ?? '';
 $author    = $_GET['author'] ?? '';
@@ -109,6 +110,7 @@ include __DIR__ . '/../includes/header.php';
 <?php if ($game_type === 'breakout'): ?>
 <script>
 // ── Breakout engine ──────────────────────────────────────────────
+const CSRF = '<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>';
 const canvas = document.getElementById('breakout-canvas');
 const ctx    = canvas.getContext('2d');
 
@@ -239,7 +241,7 @@ function gameLoop() {
     ctx.textAlign = 'center';
     ctx.fillText(b.word, b.x + b.w/2, b.y + b.h*0.75);
   }
-  if (!any) { gameRunning = false; showMsg('過關！分數：' + score + ' 🎉'); return; }
+  if (!any) { gameRunning = false; showMsg('過關！分數：' + score + ' 🎉'); grantGameAchievement('breakout'); return; }
 
   // Ball draw
   ctx.fillStyle = '#f5efe0';
@@ -251,6 +253,16 @@ function gameLoop() {
 }
 
 // Init
+async function grantGameAchievement(game) {
+  try {
+    const fd = new FormData();
+    fd.append('action', 'game_complete');
+    fd.append('game', game);
+    fd.append('csrf_token', CSRF);
+    await fetch('/api/achievements.php', { method: 'POST', body: fd });
+  } catch (e) { /* silent — achievement grant is best-effort */ }
+}
+
 resizeCanvas();
 showMsg('文磚挑戰 — 準備好了嗎？');
 window.addEventListener('resize', () => { if (!gameRunning) resizeCanvas(); });
@@ -260,6 +272,7 @@ window.addEventListener('resize', () => { if (!gameRunning) resizeCanvas(); });
 <?php if ($game_type === 'matching'): ?>
 <script>
 const LEARNING_TEXT = <?= json_encode($learning_text, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+const CSRF = '<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>';
 
 // Load essay list into picker
 fetch('/api/essays.php?action=list')
@@ -355,9 +368,17 @@ async function loadPairsFromText(text) {
     board.appendChild(el);
   });
 
-  // Achievement tracking
-  const done = parseInt(localStorage.getItem('matching_done') || '0') + 1;
-  localStorage.setItem('matching_done', done);
+  // (achievement tracked on game completion, not on loading pairs)
+}
+
+async function grantGameAchievement(game) {
+  try {
+    const fd = new FormData();
+    fd.append('action', 'game_complete');
+    fd.append('game', game);
+    fd.append('csrf_token', CSRF);
+    await fetch('/api/achievements.php', { method: 'POST', body: fd });
+  } catch (e) { /* silent — achievement grant is best-effort */ }
 }
 
 function selectCard(el) {
@@ -384,6 +405,7 @@ function selectCard(el) {
       clearInterval(_timerInt);
       document.getElementById('result-time').textContent = _timer;
       document.getElementById('match-result').classList.remove('hidden');
+      grantGameAchievement('matching');
     }
   } else {
     // No match

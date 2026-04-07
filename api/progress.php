@@ -43,6 +43,13 @@ if ($action === 'get') {
 }
 
 if ($action === 'save' && $method === 'POST') {
+    $csrf_token = $_POST['csrf_token'] ?? '';
+    if (!csrf_token_verify($csrf_token)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+        exit;
+    }
+
     $author_id = $_POST['author_id'] ?? '';
     $level     = (int)($_POST['level'] ?? 0);
     $stars     = (int)($_POST['stars'] ?? 0);
@@ -56,8 +63,8 @@ if ($action === 'save' && $method === 'POST') {
         db_query(
             'INSERT INTO user_progress (user_id, author_id, level, stars)
              VALUES (?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE stars = GREATEST(stars, VALUES(stars)), updated_at = CURRENT_TIMESTAMP',
-            [$user_id, $author_id, $level, $stars]
+             ON DUPLICATE KEY UPDATE stars = GREATEST(stars, ?), updated_at = CURRENT_TIMESTAMP',
+            [$user_id, $author_id, $level, $stars, $stars]
         );
         progress_check_achievements($user_id, $author_id, $level, $stars);
         echo json_encode(['success' => true]);

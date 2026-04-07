@@ -50,7 +50,11 @@ function auth_handle_login(): void {
 
     $result = auth_login($username, $password);
     if ($result['success']) {
+        // Validate redirect is a local path to prevent open-redirect attacks
         $redirect = $_POST['redirect'] ?? '/';
+        if (!is_string($redirect) || !str_starts_with($redirect, '/') || str_starts_with($redirect, '//')) {
+            $redirect = '/';
+        }
         $result['redirect'] = $redirect;
     }
     echo json_encode($result);

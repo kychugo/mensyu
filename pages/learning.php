@@ -206,6 +206,7 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <script>
+const CSRF_TOKEN = '<?= htmlspecialchars(csrf_token_generate(), ENT_QUOTES, 'UTF-8') ?>';
 let _currentLevel = 0, _currentAuthor = '', _currentText = '';
 
 const authorNames = { sushe: '蘇軾', hanyu: '韓愈' };
@@ -259,7 +260,7 @@ async function annotateChar(el, ch) {
   tip.classList.remove('hidden');
   tip.style.left = (rect.left + window.scrollX) + 'px';
   tip.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
-  tip.textContent = '載入中…';
+  tip.textContent = '🔍 查詢字義中…';
 
   if (annotationCache[ch]) {
     showTip(tip, annotationCache[ch]);
@@ -362,6 +363,7 @@ function submitQuiz() {
 async function saveProgress(author, level, stars) {
   const fd = new FormData();
   fd.append('action', 'save');
+  fd.append('csrf_token', CSRF_TOKEN);
   fd.append('author_id', author);
   fd.append('level', level);
   fd.append('stars', stars);

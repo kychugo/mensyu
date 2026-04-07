@@ -126,6 +126,11 @@ function db_install(): void {
         ['cron_last_run',       '0'],
         ['cron_interval_hours', '2'],
         ['platform_name',       '文樞 Mensyu'],
+        ['deepseek_api_keys',   '[]'],  // JSON array of DeepSeek API keys
+        ['ai_text_endpoint',    'https://text.pollinations.ai/openai'],
+        ['ai_image_endpoint',   'https://gen.pollinations.ai/prompt/'],
+        ['ai_text_models',      '["deepseek","glm","qwen-large","qwen-safety"]'],
+        ['ai_image_models',     '["gptimage","wan-image","qwen-image","klein","zimage","flux"]'],
     ];
     $stmt = $pdo->prepare(
         'INSERT IGNORE INTO app_settings (setting_key, setting_value) VALUES (?, ?)'

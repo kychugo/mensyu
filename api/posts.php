@@ -27,11 +27,6 @@ if ($action === 'list') {
             [$limit, $offset]
         )->fetchAll();
 
-        // Sanitise output
-        foreach ($posts as &$p) {
-            $p['content']  = db_escape($p['content']);
-            $p['username'] = db_escape($p['username'] ?? '');
-        }
         echo json_encode(['success' => true, 'data' => $posts]);
     } catch (PDOException $e) {
         echo json_encode(['success' => false, 'message' => 'DB error']);
@@ -47,10 +42,6 @@ if ($action === 'comments') {
              FROM teahouse_comments WHERE post_id = ? ORDER BY created_at ASC',
             [$post_id]
         )->fetchAll();
-        foreach ($comments as &$c) {
-            $c['content']  = db_escape($c['content']);
-            $c['username'] = db_escape($c['username'] ?? '');
-        }
         echo json_encode(['success' => true, 'data' => $comments]);
     } catch (PDOException $e) {
         echo json_encode(['success' => false, 'message' => 'DB error']);
@@ -85,12 +76,16 @@ if ($action === 'add') {
         );
         // Enforce max 50 posts
         teahouse_enforce_limit();
-        // Grant 💬 古今對話 achievement check
-        $cnt = db_query(
+        // Grant 💬 古今對話 achievement: combined posts + comments >= 10
+        $posts_cnt = (int)db_query(
             'SELECT COUNT(*) FROM teahouse_posts WHERE user_id = ?',
             [$user['id']]
         )->fetchColumn();
-        if ((int)$cnt >= 10) {
+        $comments_cnt = (int)db_query(
+            'SELECT COUNT(*) FROM teahouse_comments WHERE user_id = ?',
+            [$user['id']]
+        )->fetchColumn();
+        if ($posts_cnt + $comments_cnt >= 10) {
             db_query('INSERT IGNORE INTO achievements (user_id, badge_id) VALUES (?, ?)', [$user['id'], 'social_10']);
         }
         echo json_encode(['success' => true]);
@@ -118,12 +113,16 @@ if ($action === 'comment') {
             'INSERT INTO teahouse_comments (post_id, user_id, username, content, is_ai) VALUES (?, ?, ?, ?, 0)',
             [$post_id, $user['id'], $user['username'], $content]
         );
-        // Grant achievement check
-        $cnt = db_query(
+        // Grant achievement check: combined posts + comments >= 10
+        $posts_cnt = (int)db_query(
+            'SELECT COUNT(*) FROM teahouse_posts WHERE user_id = ?',
+            [$user['id']]
+        )->fetchColumn();
+        $comments_cnt = (int)db_query(
             'SELECT COUNT(*) FROM teahouse_comments WHERE user_id = ?',
             [$user['id']]
         )->fetchColumn();
-        if ((int)$cnt >= 10) {
+        if ($posts_cnt + $comments_cnt >= 10) {
             db_query('INSERT IGNORE INTO achievements (user_id, badge_id) VALUES (?, ?)', [$user['id'], 'social_10']);
         }
         echo json_encode(['success' => true]);
@@ -140,7 +139,17 @@ function teahouse_enforce_limit(): void {
     try {
         $count = (int)db_query('SELECT COUNT(*) FROM teahouse_posts')->fetchColumn();
         if ($count > 50) {
-            db_query('DELETE FROM teahouse_posts ORDER BY created_at ASC LIMIT ?', [$count - 50]);
+            $to_delete = $count - 50;
+            // Delete orphaned comments for the oldest posts first
+            $old_ids = db_query(
+                'SELECT id FROM teahouse_posts ORDER BY created_at ASC LIMIT ?',
+                [$to_delete]
+            )->fetchAll(PDO::FETCH_COLUMN);
+            if (!empty($old_ids)) {
+                $placeholders = implode(',', array_fill(0, count($old_ids), '?'));
+                db_query("DELETE FROM teahouse_comments WHERE post_id IN ($placeholders)", $old_ids);
+            }
+            db_query('DELETE FROM teahouse_posts ORDER BY created_at ASC LIMIT ?', [$to_delete]);
         }
     } catch (PDOException $e) {}
 }

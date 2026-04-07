@@ -33,6 +33,7 @@ include __DIR__ . '/../includes/header.php';
       ['content',   '📝', '內容管理'],
       ['cron',      '⏰', 'Cron / 貼文'],
       ['settings',  '⚙️', '系統設定'],
+      ['ai_config', '🤖', 'AI 設定'],
     ] as [$id, $ico, $lbl]): ?>
     <button data-tab="<?= $id ?>" onclick="switchTab('<?= $id ?>')"
       class="tab-btn px-4 py-1.5 rounded-full text-sm font-medium transition-colors hover:bg-gold hover:text-ink">
@@ -177,11 +178,112 @@ include __DIR__ . '/../includes/header.php';
       <div class="text-center text-gray-400 py-8 animate-pulse">載入中…</div>
     </div>
   </div>
+
+  <!-- ── AI Config ──────────────────────────────────────────────── -->
+  <div id="tab-ai_config" class="tab-content hidden">
+    <div class="max-w-2xl space-y-6">
+      <!-- Pollinations text config -->
+      <div class="bg-white rounded-xl shadow p-5 space-y-4">
+        <h3 class="font-bold text-ink mb-1">🌸 文字 AI（Pollinations / 主要）</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">文字 API 端點</label>
+            <div class="flex gap-2">
+              <input type="text" id="ai-text-endpoint"
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gold"
+                placeholder="https://text.pollinations.ai/openai">
+              <button onclick="saveAiConfig('ai_text_endpoint', document.getElementById('ai-text-endpoint').value)"
+                class="text-xs bg-ink text-gold px-3 py-2 rounded-lg hover:bg-ink-light transition-colors">儲存</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">文字模型（逗號分隔，按優先順序）</label>
+            <div class="flex gap-2">
+              <input type="text" id="ai-text-models"
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gold"
+                placeholder="deepseek,glm,qwen-large,qwen-safety">
+              <button onclick="saveAiModels('ai_text_models', 'ai-text-models')"
+                class="text-xs bg-ink text-gold px-3 py-2 rounded-lg hover:bg-ink-light transition-colors">儲存</button>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">如所有模型失敗，系統自動嘗試 DeepSeek 備用。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pollinations image config -->
+      <div class="bg-white rounded-xl shadow p-5 space-y-4">
+        <h3 class="font-bold text-ink mb-1">🖼️ 圖像 AI（Pollinations）</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">圖像 API 端點</label>
+            <div class="flex gap-2">
+              <input type="text" id="ai-image-endpoint"
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gold"
+                placeholder="https://gen.pollinations.ai/prompt/">
+              <button onclick="saveAiConfig('ai_image_endpoint', document.getElementById('ai-image-endpoint').value)"
+                class="text-xs bg-ink text-gold px-3 py-2 rounded-lg hover:bg-ink-light transition-colors">儲存</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">圖像模型（逗號分隔，按優先順序）</label>
+            <div class="flex gap-2">
+              <input type="text" id="ai-image-models"
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gold"
+                placeholder="gptimage,wan-image,qwen-image,klein,zimage,flux">
+              <button onclick="saveAiModels('ai_image_models', 'ai-image-models')"
+                class="text-xs bg-ink text-gold px-3 py-2 rounded-lg hover:bg-ink-light transition-colors">儲存</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DeepSeek keys -->
+      <div class="bg-white rounded-xl shadow p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-ink">🔑 DeepSeek API Keys（備用，多 Key 自動切換）</h3>
+          <button onclick="showAddKeyForm()"
+            class="text-xs bg-ink text-gold px-3 py-1.5 rounded-lg hover:bg-ink-light transition-colors">
+            + 新增
+          </button>
+        </div>
+        <div id="deepseek-keys-list" class="space-y-2 mb-4">
+          <div class="text-gray-400 text-sm text-center py-4 animate-pulse">載入中…</div>
+        </div>
+        <!-- Add/Edit form -->
+        <div id="key-form" class="hidden bg-gray-50 rounded-lg p-4 space-y-3">
+          <p id="key-form-title" class="text-sm font-semibold text-ink">新增 API Key</p>
+          <input type="text" id="key-input" placeholder="sk-xxxxxxxxxxxxxxxx"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gold">
+          <input type="hidden" id="key-edit-index" value="-1">
+          <div class="flex gap-2">
+            <button onclick="saveKey()"
+              class="flex-1 bg-ink text-gold text-sm py-2 rounded-lg hover:bg-ink-light transition-colors">
+              儲存
+            </button>
+            <button onclick="hideKeyForm()"
+              class="px-4 bg-gray-200 text-ink text-sm py-2 rounded-lg hover:bg-gray-300 transition-colors">
+              取消
+            </button>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-3">
+          Keys 按順序嘗試，成功時立即使用，失敗自動切換下一個。
+        </p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 const CSRF = '<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>';
 let _userPage = 1, _errorPage = 1, _contentPage = 1;
+
+// HTML escape helper for safe innerHTML insertion
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
 
 // ── Tab switching ─────────────────────────────────────────────────
 const tabLoaded = {};
@@ -209,6 +311,7 @@ function loadTab(id) {
   if (id === 'content')   loadContent(1);
   if (id === 'cron')      loadCronInfo();
   if (id === 'settings')  loadSettings();
+  if (id === 'ai_config') loadAiConfig();
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────
@@ -231,17 +334,17 @@ async function loadDashboard() {
   const errBox = document.getElementById('dash-errors');
   errBox.innerHTML = recent_errors.length ? recent_errors.map(e =>
     `<div class="bg-white rounded-lg p-2 shadow-sm text-xs">
-       <span class="font-bold ${levelColor(e.error_level)}">[${e.error_level}]</span>
-       <span class="ml-1 text-ink">${truncate(e.message, 80)}</span>
-       <div class="text-gray-400 mt-0.5">${e.created_at}</div>
+       <span class="font-bold ${levelColor(e.error_level)}">[${esc(e.error_level)}]</span>
+       <span class="ml-1 text-ink">${esc(truncate(e.message, 80))}</span>
+       <div class="text-gray-400 mt-0.5">${esc(e.created_at)}</div>
      </div>`
   ).join('') : '<p class="text-xs text-gray-400">無錯誤記錄 ✅</p>';
 
   const usrBox = document.getElementById('dash-users');
   usrBox.innerHTML = recent_users.map(u =>
     `<div class="bg-white rounded-lg p-2 shadow-sm text-xs flex justify-between">
-       <span class="font-medium">${u.username} ${u.is_admin ? '👑' : ''}</span>
-       <span class="text-gray-400">${u.created_at?.slice(0,10)}</span>
+       <span class="font-medium">${esc(u.username)} ${u.is_admin ? '👑' : ''}</span>
+       <span class="text-gray-400">${esc(u.created_at?.slice(0,10))}</span>
      </div>`
   ).join('');
 }
@@ -254,8 +357,8 @@ async function loadUsers(page) {
   document.getElementById('user-tbody').innerHTML = data.map(u =>
     `<tr class="border-t border-gray-100 hover:bg-amber-50">
        <td class="px-3 py-2 text-gray-500">${u.id}</td>
-       <td class="px-3 py-2 font-medium">${u.username}</td>
-       <td class="px-3 py-2 text-gray-400">${u.created_at?.slice(0,10)}</td>
+       <td class="px-3 py-2 font-medium">${esc(u.username)}</td>
+       <td class="px-3 py-2 text-gray-400">${esc(u.created_at?.slice(0,10))}</td>
        <td class="px-3 py-2 text-center">${u.is_admin ? '👑' : '—'}</td>
        <td class="px-3 py-2 text-center">${u.is_banned ? '🔒' : '—'}</td>
        <td class="px-3 py-2 text-center">
@@ -267,7 +370,7 @@ async function loadUsers(page) {
            class="text-xs px-2 py-1 rounded ${u.is_banned ? 'bg-green-100 hover:bg-green-200' : 'bg-red-100 hover:bg-red-200'} mr-1">
            ${u.is_banned ? '解除封禁' : '封禁'}
          </button>
-         <button onclick="deleteUser(${u.id}, '${u.username}')"
+         <button onclick="deleteUser(${u.id}, ${JSON.stringify(u.username)})"
            class="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200">
            刪除
          </button>
@@ -298,11 +401,11 @@ async function loadErrors(page) {
   const {data, total} = await api('GET', {action:'errors', page, level});
   document.getElementById('error-tbody').innerHTML = data.map(e =>
     `<tr class="border-t border-gray-100 hover:bg-red-50 align-top">
-       <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">${e.created_at?.slice(0,16)}</td>
-       <td class="px-3 py-2"><span class="font-bold text-xs ${levelColor(e.error_level)}">${e.error_level}</span></td>
-       <td class="px-3 py-2 text-xs max-w-xs break-words">${e.message}</td>
-       <td class="px-3 py-2 text-xs text-gray-400 max-w-[120px] truncate">${e.url || '—'}</td>
-       <td class="px-3 py-2 text-xs text-gray-400">${e.ip_address || '—'}</td>
+       <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">${esc(e.created_at?.slice(0,16))}</td>
+       <td class="px-3 py-2"><span class="font-bold text-xs ${levelColor(e.error_level)}">${esc(e.error_level)}</span></td>
+       <td class="px-3 py-2 text-xs max-w-xs break-words">${esc(e.message)}</td>
+       <td class="px-3 py-2 text-xs text-gray-400 max-w-[120px] truncate">${esc(e.url || '—')}</td>
+       <td class="px-3 py-2 text-xs text-gray-400">${esc(e.ip_address || '—')}</td>
      </tr>`
   ).join('') || '<tr><td colspan="5" class="text-center py-4 text-gray-400">無錯誤記錄 ✅</td></tr>';
   renderPager('error-pagination', total, 30, page, loadErrors);
@@ -354,11 +457,11 @@ async function loadContent(page) {
     `<div class="bg-white rounded-xl shadow p-4 flex items-start gap-3">
        <div class="flex-1 min-w-0">
          <div class="flex items-center gap-2 mb-1">
-           <span class="font-semibold text-sm">${p.username}</span>
+           <span class="font-semibold text-sm">${esc(p.username)}</span>
            ${p.post_type === 'ai' ? '<span class="text-xs bg-amber-100 text-amber-700 rounded px-1">古人</span>' : ''}
-           <span class="text-xs text-gray-400 ml-auto">${p.created_at?.slice(0,16)}</span>
+           <span class="text-xs text-gray-400 ml-auto">${esc(p.created_at?.slice(0,16))}</span>
          </div>
-         <p class="text-xs text-gray-700 font-serif">${p.content}</p>
+         <p class="text-xs text-gray-700 font-serif">${esc(p.content)}</p>
        </div>
        <button onclick="deletePost(${p.id})"
          class="shrink-0 text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">刪除</button>
@@ -456,7 +559,7 @@ function renderPager(containerId, total, perPage, current, loadFn) {
 
 // ── API helpers ───────────────────────────────────────────────────
 async function api(method, params = {}) {
-  let url = '/api/admin?' + new URLSearchParams(params);
+  let url = '/api/admin.php?' + new URLSearchParams(params);
   const r = await fetch(url, {method: 'GET'});
   return r.json();
 }
@@ -467,6 +570,104 @@ async function apiPost(params = {}) {
   for (const [k, v] of Object.entries(params)) fd.append(k, v);
   const r = await fetch('/api/admin.php', {method: 'POST', body: fd});
   return r.json();
+}
+
+// ── AI Config ─────────────────────────────────────────────────────
+let _aiKeys = [];
+
+async function loadAiConfig() {
+  const data = await api('GET', {action:'ai_config'});
+  if (!data.success) return;
+
+  document.getElementById('ai-text-endpoint').value  = data.text_endpoint  || '';
+  document.getElementById('ai-image-endpoint').value = data.image_endpoint || '';
+  document.getElementById('ai-text-models').value    = (data.text_models  || []).join(',');
+  document.getElementById('ai-image-models').value   = (data.image_models || []).join(',');
+
+  _aiKeys = data.deepseek_keys || [];
+  renderKeysList();
+}
+
+async function saveAiConfig(configKey, value) {
+  if (!value.trim()) { alert('不能為空'); return; }
+  const {success, message} = await apiPost({action:'update_ai_config', config_key:configKey, config_value:value.trim()});
+  if (success) {
+    alert('已儲存');
+  } else {
+    alert('儲存失敗：' + (message || '未知錯誤'));
+  }
+}
+
+async function saveAiModels(configKey, inputId) {
+  const raw = document.getElementById(inputId).value.trim();
+  if (!raw) { alert('不能為空'); return; }
+  const arr = raw.split(',').map(s => s.trim()).filter(Boolean);
+  if (!arr.length) { alert('請輸入至少一個模型'); return; }
+  const jsonVal = JSON.stringify(arr);
+  const {success, message} = await apiPost({action:'update_ai_config', config_key:configKey, config_value:jsonVal});
+  if (success) {
+    alert('已儲存');
+  } else {
+    alert('儲存失敗：' + (message || '未知錯誤'));
+  }
+}
+
+function renderKeysList() {
+  const el = document.getElementById('deepseek-keys-list');
+  if (_aiKeys.length === 0) {
+    el.innerHTML = '<p class="text-gray-400 text-sm text-center py-3">尚未設定任何 DeepSeek API Key</p>';
+    return;
+  }
+  el.innerHTML = _aiKeys.map((k, i) => {
+    const masked = k.length > 8 ? k.slice(0, 4) + '•••' + k.slice(-4) : '•••';
+    return `<div class="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+      <span class="text-xs font-mono flex-1 text-gray-700">${i + 1}. ${masked}</span>
+      <button onclick="editKey(${i})"
+        class="text-xs px-2 py-1 bg-yellow-100 hover:bg-yellow-200 rounded">編輯</button>
+      <button onclick="deleteKey(${i})"
+        class="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded">刪除</button>
+    </div>`;
+  }).join('');
+}
+
+function showAddKeyForm() {
+  document.getElementById('key-form-title').textContent = '新增 API Key';
+  document.getElementById('key-input').value = '';
+  document.getElementById('key-edit-index').value = '-1';
+  document.getElementById('key-form').classList.remove('hidden');
+  document.getElementById('key-input').focus();
+}
+
+function editKey(i) {
+  document.getElementById('key-form-title').textContent = `編輯 Key #${i + 1}`;
+  document.getElementById('key-input').value = _aiKeys[i] || '';
+  document.getElementById('key-edit-index').value = i;
+  document.getElementById('key-form').classList.remove('hidden');
+  document.getElementById('key-input').focus();
+}
+
+function hideKeyForm() {
+  document.getElementById('key-form').classList.add('hidden');
+}
+
+async function saveKey() {
+  const key   = document.getElementById('key-input').value.trim();
+  const index = parseInt(document.getElementById('key-edit-index').value);
+  if (!key) { alert('請輸入 API Key'); return; }
+  const {success, message} = await apiPost({action:'save_ai_key', api_key:key, index});
+  if (success) {
+    hideKeyForm();
+    tabLoaded['ai_config'] = false;
+    loadAiConfig();
+  } else {
+    alert('儲存失敗：' + (message || '未知錯誤'));
+  }
+}
+
+async function deleteKey(i) {
+  if (!confirm(`確定刪除 Key #${i + 1}？`)) return;
+  const {success} = await apiPost({action:'delete_ai_key', index:i});
+  if (success) { tabLoaded['ai_config'] = false; loadAiConfig(); }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
