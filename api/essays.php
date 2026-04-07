@@ -7,6 +7,7 @@
  */
 
 require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../config/db.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -39,6 +40,36 @@ if ($action === 'get') {
     $id = (int)($_GET['id'] ?? 0);
     foreach ($essays as $e) {
         if ($e['id'] === $id) {
+            // Track read for logged-in users and grant read_10 achievement
+            if ($id > 0 && session_check_auth()) {
+                $user_id = session_get_user()['id'];
+                try {
+                    // Only record once per session to avoid spam (usage_stats has no unique constraint)
+                    $page_key = 'essay_' . $id;
+                    // Check if this user has already viewed this essay today to avoid duplicate counts
+                    $already = (int)db_query(
+                        "SELECT COUNT(*) FROM usage_stats WHERE user_id=? AND page=? AND action='essay_view' AND created_at >= DATE(NOW())",
+                        [$user_id, $page_key]
+                    )->fetchColumn();
+                    if ($already === 0) {
+                        db_query(
+                            "INSERT INTO usage_stats (user_id, page, action) VALUES (?, ?, 'essay_view')",
+                            [$user_id, $page_key]
+                        );
+                    }
+                    // Grant read_10 if user has read at least 10 distinct essays
+                    $distinct = (int)db_query(
+                        "SELECT COUNT(DISTINCT page) FROM usage_stats WHERE user_id=? AND action='essay_view'",
+                        [$user_id]
+                    )->fetchColumn();
+                    if ($distinct >= 10) {
+                        db_query(
+                            'INSERT IGNORE INTO achievements (user_id, badge_id) VALUES (?, ?)',
+                            [$user_id, 'read_10']
+                        );
+                    }
+                } catch (Throwable $e2) {}
+            }
             echo json_encode(['success' => true, 'data' => $e]);
             exit;
         }

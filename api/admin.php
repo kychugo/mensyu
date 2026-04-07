@@ -233,6 +233,7 @@ function admin_delete_user(): void {
     db_query('DELETE FROM user_progress  WHERE user_id=?', [$target_id]);
     db_query('DELETE FROM achievements   WHERE user_id=?', [$target_id]);
     db_query('DELETE FROM teahouse_comments WHERE user_id=?', [$target_id]);
+    db_query('DELETE FROM teahouse_posts WHERE user_id=?', [$target_id]);
     db_query('DELETE FROM users          WHERE id=?', [$target_id]);
     json_out(['success' => true]);
 }

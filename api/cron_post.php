@@ -13,7 +13,7 @@
 //  but $GLOBALS['_cron_included'] will be set by index.php before requiring this file.)
 if (!defined('_CRON_INTERNAL') && PHP_SAPI !== 'cli') {
     $cron_key = getenv('CRON_KEY');
-    if (!$cron_key || ($_GET['cron_key'] ?? '') !== $cron_key) {
+    if (!$cron_key || !hash_equals($cron_key, $_GET['cron_key'] ?? '')) {
         http_response_code(403);
         exit('Forbidden');
     }
@@ -53,10 +53,19 @@ function cron_run(): void {
              VALUES (NULL, ?, ?, ?, ?, "ai")',
             [$author, $personas[$author], $content, $image_url]
         );
-        // Enforce 50-post cap
+        // Enforce 50-post cap, cleaning up orphaned comments
         $count = (int)db_query('SELECT COUNT(*) FROM teahouse_posts')->fetchColumn();
         if ($count > 50) {
-            db_query('DELETE FROM teahouse_posts ORDER BY created_at ASC LIMIT ?', [$count - 50]);
+            $to_delete = $count - 50;
+            $old_ids   = db_query(
+                'SELECT id FROM teahouse_posts ORDER BY created_at ASC LIMIT ?',
+                [$to_delete]
+            )->fetchAll(PDO::FETCH_COLUMN);
+            if (!empty($old_ids)) {
+                $placeholders = implode(',', array_fill(0, count($old_ids), '?'));
+                db_query("DELETE FROM teahouse_comments WHERE post_id IN ($placeholders)", $old_ids);
+            }
+            db_query('DELETE FROM teahouse_posts ORDER BY created_at ASC LIMIT ?', [$to_delete]);
         }
     } catch (PDOException $e) {}
 }

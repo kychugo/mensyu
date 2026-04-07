@@ -76,6 +76,13 @@ const USER_LOGGED_IN = <?= $user ? 'true' : 'false' ?>;
 const CSRF = '<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>';
 let _page = 1, _activePostId = null;
 
+// Escape user-supplied strings for safe innerHTML insertion
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+
 async function loadPosts(append = false) {
   if (!append) _page = 1;
   const r = await fetch(`/api/posts.php?action=list&page=${_page}`);
@@ -97,13 +104,15 @@ async function loadPosts(append = false) {
 
 function buildPostCard(p) {
   const isAI = p.post_type === 'ai';
+  const uname = esc(p.username || (isAI ? '古' : '?'));
+  const firstChar = esc((p.username || (isAI ? '古' : '?'))[0]);
   const avatar = isAI
-    ? `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-700 to-yellow-600 flex items-center justify-center text-white font-bold shrink-0">${p.username?.[0] ?? '古'}</div>`
-    : `<div class="w-10 h-10 rounded-full bg-ink text-gold flex items-center justify-center font-bold shrink-0">${p.username?.[0] ?? '?'}</div>`;
+    ? `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-700 to-yellow-600 flex items-center justify-center text-white font-bold shrink-0">${firstChar}</div>`
+    : `<div class="w-10 h-10 rounded-full bg-ink text-gold flex items-center justify-center font-bold shrink-0">${firstChar}</div>`;
 
   const badge = isAI ? `<span class="text-xs bg-amber-100 text-amber-700 rounded px-1.5 py-0.5 ml-1">古人</span>` : '';
   const img   = p.image_url
-    ? `<img src="${p.image_url}" alt="貼文圖片" class="w-full rounded-xl mt-3 max-h-64 object-cover" onerror="this.style.display='none'">`
+    ? `<img src="${esc(p.image_url)}" alt="貼文圖片" class="w-full rounded-xl mt-3 max-h-64 object-cover" onerror="this.style.display='none'">`
     : '';
   const time  = new Date(p.created_at).toLocaleString('zh-HK', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
 
@@ -114,11 +123,11 @@ function buildPostCard(p) {
       ${avatar}
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-1 mb-1">
-          <span class="font-semibold text-sm text-ink">${p.username || '匿名'}</span>
+          <span class="font-semibold text-sm text-ink">${uname}</span>
           ${badge}
           <span class="text-xs text-gray-400 ml-auto">${time}</span>
         </div>
-        <p class="text-sm text-ink leading-7 font-serif whitespace-pre-wrap">${p.content}</p>
+        <p class="text-sm text-ink leading-7 font-serif whitespace-pre-wrap">${esc(p.content)}</p>
         ${img}
         <div class="mt-3 flex gap-4 text-xs text-gray-400">
           <button onclick="openComments(${p.id})" class="hover:text-gold transition-colors">💬 留言</button>
@@ -162,10 +171,10 @@ async function openComments(postId) {
     const isAI = c.is_ai == 1;
     const badge = isAI ? '<span class="text-xs bg-amber-100 text-amber-700 rounded px-1 ml-1">古人</span>' : '';
     return `<div class="flex items-start gap-2">
-      <div class="w-7 h-7 rounded-full bg-ink text-gold text-xs flex items-center justify-center shrink-0 font-bold">${(c.username||'?')[0]}</div>
+      <div class="w-7 h-7 rounded-full bg-ink text-gold text-xs flex items-center justify-center shrink-0 font-bold">${esc((c.username||'?')[0])}</div>
       <div>
-        <span class="text-xs font-semibold text-ink">${c.username||'匿名'}${badge}</span>
-        <p class="text-xs text-gray-700 mt-0.5 font-serif leading-6">${c.content}</p>
+        <span class="text-xs font-semibold text-ink">${esc(c.username||'匿名')}${badge}</span>
+        <p class="text-xs text-gray-700 mt-0.5 font-serif leading-6">${esc(c.content)}</p>
       </div>
     </div>`;
   }).join('');
