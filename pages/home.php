@@ -313,7 +313,7 @@ include __DIR__ . '/../includes/header.php';
       <a href="/learning" class="hp-btn-primary">📖 開始學習</a>
       <a href="/translate" class="hp-btn-outline">🔤 文言翻譯</a>
       <?php if (!$user): ?>
-      <a href="/register" class="hp-btn-outline">✨ 免費注冊</a>
+      <a href="/register" class="hp-btn-outline">✨ 免費註冊</a>
       <?php endif; ?>
     </div>
   </section>
@@ -375,14 +375,14 @@ include __DIR__ . '/../includes/header.php';
               'name'   => '蘇軾',
               'sub'    => 'Su Shi · 北宋文學家',
               'class'  => 'blue',
-              'img'    => 'https://i.ibb.co/wrhVfCjJ/image.png',
+              'img'    => 'https://i.ibb.co/wrhVfCjJ/image.png', // hosted on ibb.co — also used in v3.HTML
               'levels' => [1=>'記承天寺夜遊',2=>'永遇樂',3=>'超然臺記',4=>'前赤壁賦'],
           ],
           'hanyu' => [
               'name'   => '韓愈',
               'sub'    => 'Han Yu · 唐代文學家',
               'class'  => 'green',
-              'img'    => 'https://i.ibb.co/LhqsVb40/image.png',
+              'img'    => 'https://i.ibb.co/LhqsVb40/image.png', // hosted on ibb.co — also used in v3.HTML
               'levels' => [1=>'馬說',2=>'送孟東野序',3=>'答李翊書',4=>'祭十二郎文'],
           ],
       ];

@@ -207,6 +207,7 @@ include __DIR__ . '/../includes/header.php';
 <script>
 // ── roundRect polyfill (Safari / older browsers) ──────────────────
 // Safari < 15.4 and older Firefox lack native CanvasRenderingContext2D.roundRect().
+// Firefox gained support in v112 (Apr 2023); Chrome/Edge in v99 (Mar 2022).
 // This polyfill draws a rounded rectangle using quadraticCurveTo for corner arcs.
 // @param {number} x  - X coordinate of top-left corner
 // @param {number} y  - Y coordinate of top-left corner
