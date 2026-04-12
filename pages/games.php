@@ -322,12 +322,19 @@ async function loadPairsFromText(text) {
   document.getElementById('match-result').classList.add('hidden');
   document.getElementById('match-status').classList.add('hidden');
 
-  const r = await fetch('/api/ai_text.php', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({action:'pairs', text, count:6})
-  });
-  const {success, data} = await r.json();
+  let success, data;
+  try {
+    const r = await fetch('/api/ai_text.php', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'pairs', text, count:6})
+    });
+    ({success, data} = await r.json());
+  } catch (e) {
+    document.getElementById('match-spinner').classList.add('hidden');
+    document.getElementById('match-board').innerHTML = '<p class="col-span-4 text-red-500 text-sm">⚠️ 無法載入配對，請稍後再試。</p>';
+    return;
+  }
   document.getElementById('match-spinner').classList.add('hidden');
 
   if (!success || !Array.isArray(data) || data.length === 0) {

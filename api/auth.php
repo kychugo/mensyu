@@ -68,7 +68,7 @@ function auth_handle_logout(): void {
 // ── functions ─────────────────────────────────────────────────────
 
 function auth_register(string $username, string $password, string $confirm): array {
-    if (strlen($username) < 2 || strlen($username) > 50) {
+    if (mb_strlen($username, 'UTF-8') < 2 || mb_strlen($username, 'UTF-8') > 50) {
         return ['success' => false, 'message' => '用戶名稱需為 2–50 字元'];
     }
     if (!preg_match('/^[\w\x{4e00}-\x{9fff}]+$/u', $username)) {

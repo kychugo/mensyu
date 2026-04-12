@@ -65,7 +65,7 @@ if ($action === 'add') {
         exit;
     }
     $content = trim($_POST['content'] ?? '');
-    if (strlen($content) < 2 || strlen($content) > 500) {
+    if (mb_strlen($content, 'UTF-8') < 2 || mb_strlen($content, 'UTF-8') > 500) {
         echo json_encode(['success' => false, 'message' => '內容需為 2–500 字']);
         exit;
     }
@@ -104,7 +104,7 @@ if ($action === 'comment') {
     }
     $post_id = (int)($_POST['post_id'] ?? 0);
     $content = trim($_POST['content'] ?? '');
-    if ($post_id <= 0 || strlen($content) < 1 || strlen($content) > 300) {
+    if ($post_id <= 0 || mb_strlen($content, 'UTF-8') < 1 || mb_strlen($content, 'UTF-8') > 300) {
         echo json_encode(['success' => false, 'message' => '留言內容無效']);
         exit;
     }

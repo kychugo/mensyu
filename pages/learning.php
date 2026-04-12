@@ -220,6 +220,16 @@ function openLevel(lvl, author) {
   document.getElementById('modal-title').textContent = `第 ${lvl} 關：${levelTitles[author][lvl]}`;
   document.getElementById('read-author-info').textContent = authorNames[author] + '　' + (author === 'sushe' ? '宋代' : '唐代');
   document.getElementById('level-modal').classList.remove('hidden');
+  // Reset quiz state so each level starts fresh
+  _quizData = [];
+  document.getElementById('test-box').innerHTML =
+    '<p class="text-sm text-gray-500 mb-4">準備好了嗎？以下將生成 5 題 AI 測驗。</p>' +
+    '<button onclick="loadQuiz()" class="w-full bg-ink text-gold font-bold py-2.5 rounded-lg hover:bg-ink-light transition-colors">開始測驗</button>';
+  document.getElementById('quiz-questions').innerHTML = '';
+  document.getElementById('quiz-questions').classList.add('hidden');
+  document.getElementById('quiz-feedback').innerHTML = '';
+  document.getElementById('quiz-feedback').classList.add('hidden');
+  document.getElementById('btn-quiz-submit').classList.add('hidden');
   switchTab('read');
   renderReadText();
 }
@@ -258,8 +268,8 @@ async function annotateChar(el, ch) {
   const tip = document.getElementById('annotation-tip');
   const rect = el.getBoundingClientRect();
   tip.classList.remove('hidden');
-  tip.style.left = (rect.left + window.scrollX) + 'px';
-  tip.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+  tip.style.left = rect.left + 'px';
+  tip.style.top  = (rect.bottom + 4) + 'px';
   tip.textContent = '🔍 查詢字義中…';
 
   if (annotationCache[ch]) {
